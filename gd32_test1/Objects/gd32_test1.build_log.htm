@@ -1,0 +1,114 @@
+<html>
+<body>
+<pre>
+<h1>礦ision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: μVision V5.35.0.0
+Copyright (C) 2021 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: wang asssmer, 1, LIC=HN0AE-5Y7DL-GKCBG-VRFQ8-FW8Z9-X52GQ
+ 
+Tool Versions:
+Toolchain:       MDK-ARM Plus  Version: 5.35.0.2
+Toolchain Path:  C:\Keil_v5\ARM\ARMCLANG\Bin
+C Compiler:      ArmClang.exe V6.16
+Assembler:       Armasm.exe V6.16
+Linker/Locator:  ArmLink.exe V6.16
+Library Manager: ArmAr.exe V6.16
+Hex Converter:   FromElf.exe V6.16
+CPU DLL:         SARMCM3.DLL V5.35.0.2
+Dialog DLL:      DCM.DLL V1.17.3.0
+Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.0.9.0
+Dialog DLL:      TCM.DLL V1.53.0.0
+ 
+<h2>Project:</h2>
+C:\Users\m3098\Documents\GitHub\gd32f450\gd32_test1\gd32_test1.uvprojx
+Project File Date:  10/11/2023
+
+<h2>Output:</h2>
+*** Using Compiler 'V6.16', folder: 'C:\Keil_v5\ARM\ARMCLANG\Bin'
+Rebuild target 'Target 1'
+compiling system_gd32f4xx.c...
+main.c(7): error: use of undeclared identifier 'RCU_AHB1EN_GPIOGEN'
+    RCU_AHB1EN |= RCU_AHB1EN_GPIOGEN;
+                  ^
+main.c(10): error: use of undeclared identifier 'GPIOG_CTL'
+    GPIOG_CTL &= ~GPIO_CTL_MD6;          // <C7><E5><B3><FD>模式位
+    ^
+main.c(10): error: use of undeclared identifier 'GPIO_CTL_MD6'
+    GPIOG_CTL &= ~GPIO_CTL_MD6;          // <C7><E5><B3><FD>模式位
+                  ^
+main.c(11): error: use of undeclared identifier 'GPIOG_CTL'
+    GPIOG_CTL |= (0x01 << GPIO_CTL_MD6_Pos); // <C9><E8><D6><C3>为<CD><C6><CD><EC><CA><E4><B3><F6>模式
+    ^
+main.c(11): error: use of undeclared identifier 'GPIO_CTL_MD6_Pos'
+    GPIOG_CTL |= (0x01 << GPIO_CTL_MD6_Pos); // <C9><E8><D6><C3>为<CD><C6><CD><EC><CA><E4><B3><F6>模式
+                          ^
+main.c(14): error: use of undeclared identifier 'GPIOG_BOP'
+    GPIOG_BOP = LED_PIN_BIT;
+    ^
+6 errors generated.
+compiling main.c...
+assembling startup_gd32f450_470.s...
+compiling gd32f4xx_pmu.c...
+compiling gd32f4xx_misc.c...
+compiling gd32f4xx_gpio.c...
+compiling gd32f4xx_rcu.c...
+".\Objects\gd32_test1.axf" - 6 Error(s), 0 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: ARM
+                http://www.keil.com/pack/ARM.CMSIS.5.9.0.pack
+                ARM.CMSIS.5.9.0
+                CMSIS (Common Microcontroller Software Interface Standard)
+   * Component: CORE Version: 5.6.0
+
+Package Vendor: GigaDevice
+                https://gd32mcu.com/data/documents/pack/GigaDevice.GD32F4xx_DFP.3.0.3.pack
+                GigaDevice.GD32F4xx_DFP.3.0.3
+                GigaDevice GD32F4xx Series Device Support and Examples
+   * Component: Libopt Version: 3.0.2
+   * Component: Startup Version: 3.0.2
+   * Component: GPIO Version: 3.0.2
+   * Component: MISC Version: 3.0.2
+   * Component: PMU Version: 3.0.2
+   * Component: RCU Version: 3.0.2
+
+<h2>Collection of Component include folders:</h2>
+  .\RTE\_Target_1
+  C:\Keil_v5\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include
+  C:\Keil_v5\Packs\GigaDevice\GD32F4xx_DFP\3.0.3\Device\F4XX\Firmware\Peripherals\inc
+  C:\Keil_v5\Packs\GigaDevice\GD32F4xx_DFP\3.0.3\Device\F4XX\Include
+
+<h2>Collection of Component Files used:</h2>
+
+   * Component: ARM::CMSIS:CORE:5.6.0
+
+   * Component: GigaDevice::Device:Libopt:3.0.2
+      Include file:  Device\F4XX\Include\gd32f4xx_libopt.h
+
+   * Component: GigaDevice::Device:Startup:3.0.2
+      Source file:   Device\F4XX\Source\system_gd32f4xx.c
+      Source file:   Device\F4XX\Source\ARM\startup_gd32f450_470.s
+      Include file:  Device\F4XX\Include\gd32f4xx.h
+
+   * Component: GigaDevice::Device:StdPeripherals:GPIO:3.0.2
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_gpio.c
+      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_gpio.h
+
+   * Component: GigaDevice::Device:StdPeripherals:MISC:3.0.2
+      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_misc.h
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_misc.c
+
+   * Component: GigaDevice::Device:StdPeripherals:PMU:3.0.2
+      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_pmu.h
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_pmu.c
+
+   * Component: GigaDevice::Device:StdPeripherals:RCU:3.0.2
+      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_rcu.h
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_rcu.c
+Target not created.
+Build Time Elapsed:  00:00:01
+</pre>
+</body>
+</html>

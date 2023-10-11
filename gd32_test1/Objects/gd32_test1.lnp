@@ -1,0 +1,12 @@
+--cpu=Cortex-M4.fp.sp
+".\objects\main.o"
+".\objects\startup_gd32f450_470.o"
+".\objects\system_gd32f4xx.o"
+".\objects\gd32f4xx_gpio.o"
+".\objects\gd32f4xx_misc.o"
+".\objects\gd32f4xx_pmu.o"
+".\objects\gd32f4xx_rcu.o"
+--strict --scatter ".\Objects\gd32_test1.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Listings\gd32_test1.map" -o .\Objects\gd32_test1.axf
