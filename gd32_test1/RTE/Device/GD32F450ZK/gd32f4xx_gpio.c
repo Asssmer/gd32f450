@@ -37,6 +37,7 @@ OF SUCH DAMAGE.
 
 #include "gd32f4xx_gpio.h"
 
+
 /*!
     \brief      reset GPIO port
     \param[in]  gpio_periph: GPIO port
