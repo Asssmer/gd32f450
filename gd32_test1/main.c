@@ -8,8 +8,9 @@ int main(void)
 
     while (1)
     {
-        gpio_bit_toggle(GPIOG, GPIO_PIN_6);
-        ms_delay_454(1);
+        gpio_bit_toggle(GPIOG, GPIO_PIN_7);
+        ms_delay_454(1000);
+        usart1_send(0x55);
     }
     return 0;
 }

@@ -23,6 +23,7 @@
         "cstdint": "c",
         "gd32f4xx_gpio.h": "c",
         "stdint.h": "c",
-        "gd32f4xx_timer.h": "c"
+        "gd32f4xx_timer.h": "c",
+        "stdio.h": "c"
     }
 }
