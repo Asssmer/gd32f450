@@ -54,15 +54,17 @@ void init_454(void)
 
     /* Configure USART1 */
     usart_deinit(USART1);
-    usart_baudrate_set(USART1, 115200U);
+    usart_disable(USART1);
+
     usart_word_length_set(USART1, USART_WL_8BIT);
     usart_stop_bit_set(USART1, USART_STB_1BIT);
+    usart_baudrate_set(USART1, 115200U);
     usart_parity_config(USART1, USART_PM_NONE);
+
     usart_hardware_flow_rts_config(USART1, USART_RTS_DISABLE);
     usart_hardware_flow_cts_config(USART1, USART_CTS_DISABLE);
     usart_receive_config(USART1, USART_RECEIVE_ENABLE);
     usart_transmit_config(USART1, USART_TRANSMIT_ENABLE);
-    usart_enable(USART1);
 
     /* Configure USART1 TX (PD5) as alternate function push-pull */
     gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_5);
@@ -72,6 +74,8 @@ void init_454(void)
     /* Configure USART1 RX (PD6) as floating input */
     gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_6);
     gpio_mode_set(GPIOD, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_6);
+    usart_prescaler_config(USART1,1U);
+    usart_enable(USART1);
 }
 /*!
     \brief      ms_delay
@@ -116,8 +120,10 @@ int log(uint8_t *string)
 
 void usart1_send(uint8_t data)
 {
+    while (RESET == usart_flag_get(USART1, USART_FLAG_TBE))
+        ;
     usart_data_transmit(USART1, data);
-    while (usart_flag_get(USART1, USART_FLAG_TBE) == RESET)
+    while (RESET == usart_flag_get(USART1, USART_FLAG_TC))
         ;
 }
 
