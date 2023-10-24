@@ -13,8 +13,8 @@ int main(void)
     while (1)
     {
         gpio_bit_toggle(GPIOG, GPIO_PIN_7);
-        ms_delay_454(1000);
-        usart1_send(0x0A);
+        ms_delay_454(200);
+        log_454("start!!");
     }
     return 0;
 }

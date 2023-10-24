@@ -844,6 +844,7 @@ void usart_dma_receive_config(uint32_t usart_periph, uint32_t dmacmd)
       \arg        USART_DENT_DISABLE: DMA disable for transmission
     \param[out] none
     \retval     none
+    \retval     none
 */
 void usart_dma_transmit_config(uint32_t usart_periph, uint32_t dmacmd)
 {

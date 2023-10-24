@@ -1,4 +1,5 @@
 #include "./454software.h"
+
 /*!
     \brief      initialize all 454
     \param[in]  none
@@ -8,18 +9,21 @@
 
 void init_454(void)
 {
-    /* 使能时钟 */
-    rcu_periph_clock_enable(RCU_TIMER6);
+    /* Configure RCU */
     rcu_periph_clock_enable(RCU_GPIOA);
     rcu_periph_clock_enable(RCU_GPIOC);
     rcu_periph_clock_enable(RCU_GPIOD);
+    rcu_periph_clock_enable(RCU_GPIOE);
     rcu_periph_clock_enable(RCU_GPIOG);
 
+    rcu_periph_clock_enable(RCU_TIMER6);
     rcu_periph_clock_enable(RCU_USART1);
+    rcu_periph_clock_enable(RCU_DMA0);
 
     rcu_ahb_clock_config(RCU_AHB_CKSYS_DIV1);
     rcu_apb1_clock_config(RCU_APB1_CKAHB_DIV1);
 
+    /* Configure GPIO */
     /* 配置PC9为CKOUT1 */
     gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
     gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_9);
@@ -38,11 +42,35 @@ void init_454(void)
     gpio_bit_set(GPIOG, GPIO_PIN_7);
     gpio_bit_set(GPIOG, GPIO_PIN_8);
 
-    // 配置定时器6
+    // 配置PE0,PE1,PE2
+    gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_0);
+    gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_0);
+    gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_1);
+    gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
+    gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_2);
+    gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
 
-    /* 复位TIM6 */
+    gpio_bit_set(GPIOE, GPIO_PIN_0);
+    gpio_bit_set(GPIOE, GPIO_PIN_1);
+    gpio_bit_set(GPIOE, GPIO_PIN_2);
+
+    // 配置PA6,PC6,PD12
+    gpio_mode_set(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_6);
+    gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
+    gpio_mode_set(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_6);
+    gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
+    gpio_mode_set(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_12);
+    gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_12);
+
+    gpio_bit_set(GPIOA, GPIO_PIN_6);
+    gpio_bit_set(GPIOC, GPIO_PIN_6);
+    gpio_bit_set(GPIOD, GPIO_PIN_12);
+
+    /* Configure TIMER6 */
+
     timer_deinit(RCU_TIMER6);
-    /* 初始化TIM6 */
     timer_parameter_struct timer_initpara;
     timer_initpara.prescaler = 199;
     timer_initpara.alignedmode = TIMER_COUNTER_EDGE;
@@ -55,7 +83,6 @@ void init_454(void)
     /* Configure USART1 */
     usart_deinit(USART1);
     usart_disable(USART1);
-
     usart_word_length_set(USART1, USART_WL_8BIT);
     usart_stop_bit_set(USART1, USART_STB_1BIT);
     usart_baudrate_set(USART1, 115200U);
@@ -65,6 +92,24 @@ void init_454(void)
     usart_hardware_flow_cts_config(USART1, USART_CTS_DISABLE);
     usart_receive_config(USART1, USART_RECEIVE_ENABLE);
     usart_transmit_config(USART1, USART_TRANSMIT_ENABLE);
+    usart_dma_receive_config(USART1, USART_DENR_ENABLE);
+    usart_dma_transmit_config(USART1, USART_DENT_ENABLE);
+
+    /* Configure USART1 MDA */
+    dma_deinit(DMA0, DMA_CH6);
+    dma_multi_data_parameter_struct dma_init_struct;
+    dma_multi_data_para_struct_init(&dma_init_struct);
+    dma_init_struct.periph_addr = (uint32_t)&USART_DATA(USART1);
+    dma_init_struct.periph_width = DMA_PERIPH_WIDTH_8BIT;
+    dma_init_struct.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
+    dma_init_struct.memory_width = DMA_MEMORY_WIDTH_8BIT;
+    dma_init_struct.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
+    dma_init_struct.direction = DMA_MEMORY_TO_PERIPH;
+    dma_init_struct.priority = DMA_PRIORITY_LOW;
+    dma_multi_data_mode_init(DMA0, DMA_CH6, &dma_init_struct);
+    dma_channel_subperipheral_select(DMA0, DMA_CH6, DMA_SUBPERI4);
+    dma_interrupt_enable(DMA0, DMA_CH6, DMA_CHXCTL_FTFIE);
+    nvic_irq_enable(DMA0_Channel6_IRQn, 0, 0);
 
     /* Configure USART1 TX (PD5) as alternate function push-pull */
     gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_5);
@@ -74,7 +119,7 @@ void init_454(void)
     /* Configure USART1 RX (PD6) as floating input */
     gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_6);
     gpio_mode_set(GPIOD, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_6);
-    usart_prescaler_config(USART1,1U);
+    usart_prescaler_config(USART1, 1U);
     usart_enable(USART1);
 }
 /*!
@@ -114,17 +159,30 @@ void s_delay_454(uint32_t seconds)
     }
 }
 
-int log(uint8_t *string)
+int log_454(uint8_t *string)
 {
-}
-
-void usart1_send(uint8_t data)
-{
-    while (RESET == usart_flag_get(USART1, USART_FLAG_TBE))
-        ;
-    usart_data_transmit(USART1, data);
+    while (DMA_CHCTL(DMA0, DMA_CH6) & DMA_CHXCTL_CHEN)
+    {
+    }
     while (RESET == usart_flag_get(USART1, USART_FLAG_TC))
-        ;
+    {
+    }
+    uint8_t *start = string;
+    uint16_t count_size = 0;
+    while (*start++)
+    {
+        count_size++;
+        if (count_size > 1024)
+        {
+            log_454("string is too long!");
+            return -1;
+        }
+    }
+    // usart_flag_clear(USART1, USART_FLAG_TC);
+    dma_memory_address_config(DMA0, DMA_CH6, DMA_MEMORY_0, string);
+    dma_transfer_number_config(DMA0, DMA_CH6, count_size);
+    dma_channel_enable(DMA0, DMA_CH6);
+    return 0;
 }
 
 uint8_t usart1_receive(void)
@@ -132,4 +190,13 @@ uint8_t usart1_receive(void)
     while (usart_flag_get(USART1, USART_FLAG_RBNE) == RESET)
         ;
     return usart_data_receive(USART1);
+}
+
+void DMA0_Channel6_IRQHandler(void)
+{
+    if (dma_interrupt_flag_get(DMA0, DMA_CH6, DMA_INT_FLAG_FTF) != RESET)
+    {
+        dma_interrupt_flag_clear(DMA0, DMA_CH6, DMA_INT_FLAG_FTF);
+        dma_channel_disable(DMA0, DMA_CH6);
+    }
 }
