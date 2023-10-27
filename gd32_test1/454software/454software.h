@@ -22,7 +22,7 @@ void ms_delay_454(uint32_t ms);
 void s_delay_454(uint32_t seconds);
 int log_454(uint8_t *string);
 char *intToStr(int num);
-uint8_t usart1_send(uint8_t *string, uint16_t count_size);
-uint8_t usart1_receive(void);
+uint8_t usart1_send_454(uint8_t *string, uint16_t count_size);
+uint8_t usart1_receive_454(void);
 
-uint8_t read_pressure_P10_454(uint8_t register_address);
+uint8_t i2c0_master_receive_454(uint8_t address);

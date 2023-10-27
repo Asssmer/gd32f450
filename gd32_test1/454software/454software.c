@@ -132,17 +132,10 @@ void init_454(void)
 
     gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_9);
     gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
-
-    i2c_parameter_struct i2c_init_parameter;
-    i2c_init_parameter.i2c_clock_speed = 100000; // Standard mode with 100kHz clock
-    i2c_init_parameter.i2c_mode = I2C_I2CMODE_ENABLE;
-    i2c_init_parameter.i2c_dutycycle = I2C_DUTYCYCLE_2;
-    i2c_init_parameter.i2c_ack = I2C_ACK_ENABLE;
-    i2c_init_parameter.i2c_ackpos = I2C_ACKPOS_CURRENT;
-    i2c_init_parameter.i2c_address = 0xAA;
-
     i2c_deinit(I2C0);
-    i2c_init(I2C0, &i2c_init_parameter);
+    i2c_clock_config(I2C0, 400000, I2C_DTCY_2);
+    i2c_mode_addr_config(I2C0, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, 0x33);
+
     i2c_enable(I2C0);
 }
 /*!
@@ -195,12 +188,12 @@ int log_454(uint8_t *string)
             return -1;
         }
     }
-    usart1_send(string, count_size);
+    usart1_send_454(string, count_size);
 
     return 0;
 }
 
-uint8_t usart1_send(uint8_t *string, uint16_t count_size)
+uint8_t usart1_send_454(uint8_t *string, uint16_t count_size)
 {
     while (DMA_CHCTL(DMA0, DMA_CH6) & DMA_CHXCTL_CHEN)
     {
@@ -214,7 +207,7 @@ uint8_t usart1_send(uint8_t *string, uint16_t count_size)
     return 0;
 }
 
-uint8_t usart1_receive(void)
+uint8_t usart1_receive_454(void)
 {
     while (usart_flag_get(USART1, USART_FLAG_RBNE) == RESET)
         ;
@@ -270,15 +263,29 @@ char *intToStr(int num)
     return start;
 }
 
-uint8_t read_pressure_P10_454(uint8_t register_address)
+uint8_t i2c0_master_receive_454(uint8_t address)
 {
+    i2c_start_on_bus(I2C0);
+     while(!i2c_flag_get(I2C0,I2C_FLAG_SBSEND));
+    // i2c_master_addressing(I2C0, 0xda, I2C_TRANSMITTER);
+    while(!i2c_flag_get(I2C0,I2C_FLAG_TBE));
+    i2c_master_addressing(I2C0, 0xda, I2C_RECEIVER);
+    while(!i2c_flag_get(I2C0,I2C_FLAG_ADDSEND));
 
 
 
 
-
+    i2c_stop_on_bus(I2C0);
 }
 
+
+
+
+
+
+
+
+//ÖÐ¶Ïº¯Êý
 void DMA0_Channel6_IRQHandler(void)
 {
     if (dma_interrupt_flag_get(DMA0, DMA_CH6, DMA_INT_FLAG_FTF) != RESET)
