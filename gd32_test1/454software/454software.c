@@ -9,23 +9,10 @@ char strOutput_454[MAX_STR_SIZE]; // 存储转换后的字符串
 
 void init_454(void)
 {
-    /* Configure RCU */
-    rcu_periph_clock_enable(RCU_GPIOA);
-    rcu_periph_clock_enable(RCU_GPIOB);
-    rcu_periph_clock_enable(RCU_GPIOC);
-    rcu_periph_clock_enable(RCU_GPIOD);
-    rcu_periph_clock_enable(RCU_GPIOE);
-    rcu_periph_clock_enable(RCU_GPIOG);
-
-    rcu_periph_clock_enable(RCU_TIMER6);
-    rcu_periph_clock_enable(RCU_USART1);
-    rcu_periph_clock_enable(RCU_DMA0);
-    rcu_periph_clock_enable(RCU_I2C0);
-
-    rcu_ahb_clock_config(RCU_AHB_CKSYS_DIV1);
-    rcu_apb1_clock_config(RCU_APB1_CKAHB_DIV1);
-
+    RCU_init_454();
+    NVIC_init_454();
     /* Configure GPIO */
+
     /* 配置PC9为CKOUT1 */
     gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
     gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_9);
@@ -110,7 +97,6 @@ void init_454(void)
     dma_multi_data_mode_init(DMA0, DMA_CH6, &dma_init_struct);
     dma_channel_subperipheral_select(DMA0, DMA_CH6, DMA_SUBPERI4);
     dma_interrupt_enable(DMA0, DMA_CH6, DMA_CHXCTL_FTFIE);
-    nvic_irq_enable(DMA0_Channel6_IRQn, 0, 0);
 
     // Configure USART1 TX (PD5) as alternate function push-pull
     gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_5);
@@ -124,19 +110,69 @@ void init_454(void)
     usart_enable(USART1);
 
     /* Configure I2C0 P10 PB8 PB9*/
-    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_8);
-    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_9);
+    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_9); // I2C0_SDA
+    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_8); // I2C0_SCL
 
     gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_8);
     gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_8);
 
     gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_9);
     gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
-    i2c_deinit(I2C0);
-    i2c_clock_config(I2C0, 400000, I2C_DTCY_2);
-    i2c_mode_addr_config(I2C0, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, 0x33);
 
+    i2c_deinit(I2C0);
+    i2c_clock_config(I2C0, 100000, I2C_DTCY_2);
+    i2c_mode_addr_config(I2C0, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, I2C0_OWN_ADDRESS7);
     i2c_enable(I2C0);
+    i2c_ack_config(I2C0, I2C_ACK_ENABLE);
+
+    /* Configure I2C1 P11 PF0 PF1 */
+    gpio_af_set(GPIOF, GPIO_AF_4, GPIO_PIN_0); // I2C1_SDA
+    gpio_af_set(GPIOF, GPIO_AF_4, GPIO_PIN_1); // I2C1_SCL
+
+    gpio_mode_set(GPIOF, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_0);
+    gpio_output_options_set(GPIOF, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_0);
+
+    gpio_mode_set(GPIOF, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_1);
+    gpio_output_options_set(GPIOF, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
+
+    i2c_deinit(I2C1);
+    i2c_clock_config(I2C1, 100000, I2C_DTCY_2);
+    // i2c_interrupt_enable(I2C1,I2C_INT_EV);
+    i2c_mode_addr_config(I2C1, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, I2C1_OWN_ADDRESS7);
+    i2c_enable(I2C1);
+    i2c_ack_config(I2C1, I2C_ACK_ENABLE);
+}
+
+void RCU_init_454(void)
+{
+    rcu_periph_clock_enable(RCU_GPIOA);
+    rcu_periph_clock_enable(RCU_GPIOB);
+    rcu_periph_clock_enable(RCU_GPIOC);
+    rcu_periph_clock_enable(RCU_GPIOD);
+    rcu_periph_clock_enable(RCU_GPIOE);
+    rcu_periph_clock_enable(RCU_GPIOF);
+    rcu_periph_clock_enable(RCU_GPIOG);
+
+    rcu_periph_clock_enable(RCU_TIMER6);
+    rcu_periph_clock_enable(RCU_USART1);
+    rcu_periph_clock_enable(RCU_DMA0);
+    rcu_periph_clock_enable(RCU_I2C0);
+    rcu_periph_clock_enable(RCU_I2C1);
+
+    rcu_ahb_clock_config(RCU_AHB_CKSYS_DIV1);
+    rcu_apb1_clock_config(RCU_APB1_CKAHB_DIV1);
+}
+
+void NVIC_init_454(void)
+{
+    nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
+    // 数字越小，优先级越高
+    nvic_irq_enable(DMA0_Channel6_IRQn, 0, 7);
+
+    // nvic_irq_enable(I2C0_EV_IRQn, 0, 3);
+    // nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
+    // nvic_irq_enable(I2C0_ER_IRQn, 0, 2);
+    // nvic_irq_enable(I2C1_ER_IRQn, 0, 1);
 }
 /*!
     \brief      ms_delay
@@ -263,29 +299,223 @@ char *intToStr(int num)
     return start;
 }
 
-uint8_t i2c0_master_receive_454(uint8_t address)
+void send_register_value(uintptr_t reg_address, uint8_t reg_size)
 {
-    i2c_start_on_bus(I2C0);
-     while(!i2c_flag_get(I2C0,I2C_FLAG_SBSEND));
-    // i2c_master_addressing(I2C0, 0xda, I2C_TRANSMITTER);
-    while(!i2c_flag_get(I2C0,I2C_FLAG_TBE));
-    i2c_master_addressing(I2C0, 0xda, I2C_RECEIVER);
-    while(!i2c_flag_get(I2C0,I2C_FLAG_ADDSEND));
-
-
-
-
-    i2c_stop_on_bus(I2C0);
+    switch (reg_size)
+    {
+    case 8:
+    {
+        uint8_t reg_value = *((volatile uint8_t *)reg_address);
+        usart1_send_454(&reg_value, sizeof(reg_value));
+        break;
+    }
+    case 16:
+    {
+        uint16_t reg_value = *((volatile uint16_t *)reg_address);
+        usart1_send_454((uint8_t *)&reg_value, sizeof(reg_value));
+        break;
+    }
+    case 32:
+    {
+        uint32_t reg_value = *((volatile uint32_t *)reg_address);
+        usart1_send_454((uint8_t *)&reg_value, sizeof(reg_value));
+        break;
+    }
+    default:
+        break;
+    }
 }
 
+uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, uint32_t flag, FlagStatus expected_Status)
+{
+    uint32_t timeout = 0xFFFF;
+    while (i2c_flag_get(i2c_periph, flag) != expected_Status)
+    {
+        if (timeout == 0)
+        {
+            return 0; // Timeout
+        }
+        timeout--;
+    }
+    return 1; // Success
+}
 
+void i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address)
+{
+    if (length == 2)
+    {
+        // 软件应该在START置1之前将POAP置1
+        i2c_ackpos_config(i2c_periph, I2C_ACKPOS_NEXT);
+    }
+    while (i2c_flag_get(i2c_periph, I2C_FLAG_I2CBSY))
+        ;
+    i2c_start_on_bus(i2c_periph);
+    while (!i2c_flag_get(i2c_periph, I2C_FLAG_SBSEND))
+        ;
+    i2c_master_addressing(i2c_periph, address, I2C_RECEIVER);
+    while (!i2c_flag_get(i2c_periph, I2C_FLAG_ADDSEND))
+        ;
 
+    if (length == 1)
+    {
+        i2c_ack_config(i2c_periph, I2C_ACK_DISABLE);
+        i2c_flag_clear(i2c_periph, I2C_FLAG_ADDSEND);
+        i2c_stop_on_bus(i2c_periph);
+        while (!i2c_flag_get(i2c_periph, I2C_FLAG_RBNE))
+            ;
+        *data = i2c_data_receive(i2c_periph);
+        while (I2C_CTL0(i2c_periph) & I2C_CTL0_STOP)
+            ;
+        i2c_ack_config(i2c_periph, I2C_ACK_ENABLE);
+        return;
+    }
+    else if (length == 2)
+    {
+        i2c_ack_config(i2c_periph, I2C_ACK_DISABLE);
+        i2c_flag_clear(i2c_periph, I2C_FLAG_ADDSEND);
 
+        while (!i2c_flag_get(i2c_periph, I2C_FLAG_BTC))
+            ;
+        while (!i2c_flag_get(i2c_periph, I2C_FLAG_RBNE))
+            ;
+        *data++ = i2c_data_receive(i2c_periph);
+        while (!i2c_flag_get(i2c_periph, I2C_FLAG_RBNE))
+            ;
+        *data = i2c_data_receive(i2c_periph);
+        i2c_stop_on_bus(i2c_periph);
+        while (I2C_CTL0(i2c_periph) & I2C_CTL0_STOP)
+            ;
+        i2c_ackpos_config(i2c_periph, I2C_ACKPOS_CURRENT);
+        i2c_ack_config(i2c_periph, I2C_ACK_ENABLE);
+        return;
+    }
+    else if (length > 2)
+    {
+        i2c_flag_clear(i2c_periph, I2C_FLAG_ADDSEND);
+        // 接收N-3字节
+        while (length > 3)
+        {
+            while (!i2c_flag_get(i2c_periph, I2C_FLAG_RBNE))
+                ;
+            *data++ = i2c_data_receive(i2c_periph);
+            length--;
+        }
+        // 当还剩下3字节时，准备接收倒数第三字节
+        // 等待倒数第三字节接收到移位寄存器
+        while (!i2c_flag_get(i2c_periph, I2C_FLAG_BTC))
+            ;
+        // 清除ACKEN位，准备发送NACK
+        i2c_ack_config(i2c_periph, I2C_ACK_DISABLE);
+        // 读取倒数第三个字节
+        *data++ = i2c_data_receive(i2c_periph);
+        length--;
+        // 发送停止信号
+        i2c_stop_on_bus(i2c_periph);
+        // 读取倒数第二个字节
+        while (!i2c_flag_get(i2c_periph, I2C_FLAG_RBNE))
+            ;
+        *data++ = i2c_data_receive(i2c_periph);
 
+        length--;
+        // 读取最后一个字节
+        while (!i2c_flag_get(i2c_periph, I2C_FLAG_RBNE))
+            ;
+        *data = i2c_data_receive(i2c_periph);
 
+        while (I2C_CTL0(i2c_periph) & I2C_CTL0_STOP)
+            ;
+        i2c_ack_config(i2c_periph, I2C_ACK_ENABLE);
 
+        return;
+    }
+    else
+    {
+        return;
+    }
+}
 
-//中断函数
+void i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address)
+{
+    while (i2c_flag_get(i2c_periph, I2C_FLAG_I2CBSY))
+        ;
+    i2c_start_on_bus(i2c_periph);
+    while (!i2c_flag_get(i2c_periph, I2C_FLAG_SBSEND))
+        ;
+    i2c_master_addressing(i2c_periph, address, I2C_TRANSMITTER);
+    while (!i2c_flag_get(i2c_periph, I2C_FLAG_ADDSEND))
+        ;
+    i2c_flag_clear(i2c_periph, I2C_FLAG_ADDSEND);
+    while (length--)
+    {
+        while (!i2c_flag_get(I2C0, I2C_FLAG_TBE))
+            ;
+        i2c_data_transmit(i2c_periph, *data++);
+    }
+    i2c_stop_on_bus(i2c_periph);
+    while (I2C_CTL0(i2c_periph) & I2C_CTL0_STOP)
+        ;
+}
+
+uint8_t P11_Initial(void)
+{
+    i2c_master_send(I2C0, ZXP3010D_Address, 1, ZXP3010D_Address);
+}
+
+void P11_StartP(void)
+{
+    uint8_t buf[4];
+
+    buf[0] = 0xA5;
+    // buf[1] = 0x13;输出原始ADC值
+    buf[1] = 0x11; // 输出校准数据
+
+    i2c_master_send(I2C0, buf, 2, ZXP3010D_Address);
+
+    buf[0] = 0x30;
+    buf[1] = 0x09;
+    i2c_master_send(I2C0, buf, 2, ZXP3010D_Address);
+}
+
+uint8_t P11_ConStatus(void)
+{
+    uint8_t status;
+    uint8_t buf[4] = {0};
+
+    buf[0] = ZXP3010D_CMD;
+    i2c_master_send(I2C0, buf, 1, ZXP3010D_Address);
+
+    i2c_master_receive(I2C0, buf, 1, ZXP3010D_Address);
+    status = (buf[0] >> 3) & 0x01;
+    return status;
+}
+
+int32_t P11_ResultP(void)
+{
+
+    int32_t ltemp;
+    uint8_t buf[4];
+    buf[0] = 0x06;
+    i2c_master_send(I2C0, buf, 1, ZXP3010D_Address);
+    i2c_master_receive(I2C0, buf, 3, ZXP3010D_Address);
+
+    ltemp = buf[0] << 8;
+    ltemp |= buf[1];
+    ltemp <<= 8;
+    ltemp |= buf[2];
+    return (ltemp);
+}
+
+// 中断函数
+void I2C1_EV_IRQHandler(void)
+{
+    log_454("interrupt...");
+    // if (i2c_interrupt_flag_get(I2C1, I2C_INT_FLAG_ADDSEND))
+    // {
+    //     /* clear the ADDSEND bit */
+    //     // i2c_interrupt_flag_clear(I2C1, I2C_INT_FLAG_ADDSEND);
+    // }
+}
+
 void DMA0_Channel6_IRQHandler(void)
 {
     if (dma_interrupt_flag_get(DMA0, DMA_CH6, DMA_INT_FLAG_FTF) != RESET)
