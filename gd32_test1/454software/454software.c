@@ -505,6 +505,43 @@ int32_t P11_ResultP(void)
     return (ltemp);
 }
 
+void P11_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
+{
+	float fp, ft, ftemp;
+	
+///////////////////////////////////////////////////  温度值正负判断       
+        ft = ut ;
+        if(ft >= pow(2.0, 15.0))
+	
+           ft =ft - pow(2.0, 16.0);
+              
+ ///////////////////////////////////////////////////       
+       
+ /////////////////////////////////////////////////    压力值正负判断   
+         ftemp = up;
+         if(ftemp >= pow(2.0, 23.0))
+	
+           ftemp =ftemp - pow(2.0, 24.0);
+ //////////////////////////////////////////////////    
+     ftemp= ftemp/pow(2.0, 12.0); //n=13  1Kpa// n=14  500pa//12 2kpa  //11 4kpa; // 9 10kpa //  6  100kpa            
+        
+        ft =  ft / 256.0;
+        fp = ftemp;                                    
+	*rp = fp;
+	*rt = ft;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 // 中断函数
 void I2C1_EV_IRQHandler(void)
 {

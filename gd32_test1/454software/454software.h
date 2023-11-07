@@ -52,6 +52,9 @@ uint8_t P11_Initial(void);
 void P11_StartP(void);
 uint8_t P11_ConStatus(void);
 int32_t P11_ResultP(void);
+void P11_Caculate(int32_t up, int32_t ut, float *rp, float *rt);
+
+
 
 void i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
 void i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
