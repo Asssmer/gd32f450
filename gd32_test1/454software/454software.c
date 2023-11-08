@@ -299,6 +299,70 @@ char *intToStr(int num)
     return start;
 }
 
+char *floatToStr(float num, int afterpoint)
+{
+    // Check buffer size
+    if (afterpoint >= MAX_STR_SIZE - 1)
+    {
+        strOutput_454[0] = '\0'; // Not enough space for the number
+        return NULL;
+    }
+
+    char *start = strOutput_454;
+    char *end = strOutput_454;
+    int isNegative = 0;
+
+    if (num < 0)
+    {
+        isNegative = 1;
+        num = -num;
+        *end++ = '-';
+    }
+
+    // Handle integer part
+    int intPart = (int)num;
+    float floatPart = num - (float)intPart;
+
+    // Convert integer part to string
+    do
+    {
+        *end++ = '0' + (intPart % 10);
+        intPart /= 10;
+    } while (intPart > 0);
+
+    // Reverse integer part string (excluding negative sign, if any)
+    char *revStart = isNegative ? start + 1 : start;
+    char *revEnd = end - 1;
+    char temp;
+    while (revStart < revEnd)
+    {
+        temp = *revStart;
+        *revStart = *revEnd;
+        *revEnd = temp;
+        revStart++;
+        revEnd--;
+    }
+
+    // Handle decimal part
+    if (afterpoint > 0)
+    {
+        *end++ = '.'; // add decimal point
+
+        // Convert decimal part to string
+        while (afterpoint-- > 0)
+        {
+            floatPart *= 10;
+            int digit = (int)floatPart;
+            *end++ = '0' + digit;
+            floatPart -= (float)digit;
+        }
+    }
+
+    *end = '\0'; // Null-terminate
+
+    return start;
+}
+
 void send_register_value(uintptr_t reg_address, uint8_t reg_size)
 {
     switch (reg_size)
@@ -476,6 +540,19 @@ void P11_StartP(void)
     i2c_master_send(I2C0, buf, 2, ZXP3010D_Address);
 }
 
+void P11_StartT(void)
+{
+    uint8_t buf[4];
+
+    buf[0] = 0xA5;
+    buf[1] = 0x01;
+    i2c_master_send(I2C0, buf, 2, ZXP3010D_Address);
+
+    buf[0] = 0x30;
+    buf[1] = 0x08;
+    i2c_master_send(I2C0, buf, 2, ZXP3010D_Address);
+}
+
 uint8_t P11_ConStatus(void)
 {
     uint8_t status;
@@ -505,42 +582,40 @@ int32_t P11_ResultP(void)
     return (ltemp);
 }
 
-void P11_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
+int32_t P11_ResultT(void)
 {
-	float fp, ft, ftemp;
-	
-///////////////////////////////////////////////////  温度值正负判断       
-        ft = ut ;
-        if(ft >= pow(2.0, 15.0))
-	
-           ft =ft - pow(2.0, 16.0);
-              
- ///////////////////////////////////////////////////       
-       
- /////////////////////////////////////////////////    压力值正负判断   
-         ftemp = up;
-         if(ftemp >= pow(2.0, 23.0))
-	
-           ftemp =ftemp - pow(2.0, 24.0);
- //////////////////////////////////////////////////    
-     ftemp= ftemp/pow(2.0, 12.0); //n=13  1Kpa// n=14  500pa//12 2kpa  //11 4kpa; // 9 10kpa //  6  100kpa            
-        
-        ft =  ft / 256.0;
-        fp = ftemp;                                    
-	*rp = fp;
-	*rt = ft;
+    int32_t ltemp;
+    uint8_t buf[4];
+
+    buf[0] = 0x09;
+    i2c_master_send(I2C0, buf, 1, ZXP3010D_Address);
+    i2c_master_receive(I2C0, buf, 2, ZXP3010D_Address);
+
+    ltemp = buf[0] << 8;
+    ltemp |= buf[1];
+
+    return (ltemp);
 }
 
+void P11_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
+{
+    float fp, ft, ftemp;
 
+    //温度值正负判断
+    ft = ut;
+    if (ft >= pow(2.0, 15.0))
+    ft = ft - pow(2.0, 16.0);
+    //压力值正负判断
+    ftemp = up;
+    if (ftemp >= pow(2.0, 23.0))
+    ftemp = ftemp - pow(2.0, 24.0);
+    ftemp = ftemp / pow(2.0, 12.0); // n=13  1Kpa// n=14  500pa//12 2kpa  //11 4kpa; // 9 10kpa //  6  100kpa
 
-
-
-
-
-
-
-
-
+    ft = ft / 256.0;
+    fp = ftemp;
+    *rp = fp;
+    *rt = ft;
+}
 
 // 中断函数
 void I2C1_EV_IRQHandler(void)
