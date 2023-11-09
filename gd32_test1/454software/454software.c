@@ -885,3 +885,12 @@ void DMA0_Channel6_IRQHandler(void)
         dma_channel_disable(DMA0, DMA_CH6);
     }
 }
+
+void DMA1_Channel7_IRQHandler(void)
+{
+    if (dma_interrupt_flag_get(DMA1, DMA_CH7, DMA_INT_FLAG_FTF) != RESET)
+    {
+        dma_interrupt_flag_clear(DMA1, DMA_CH7, DMA_INT_FLAG_FTF);
+        dma_channel_disable(DMA1, DMA_CH7);
+    }
+}

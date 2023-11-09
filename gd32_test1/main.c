@@ -20,9 +20,9 @@ int main(void)
         gpio_bit_toggle(GPIOG, GPIO_PIN_7);
         log_454("\n start!!\n");
         #ifdef BOARD_VER_2
-        ZXP8_get_data_454(I2C0,&i2c0_fTemp,&i2c0_fPress);
-        ZXP8_get_data_454(I2C1,&i2c1_fTemp,&i2c1_fPress);
-        ZXP2_get_data_454(I2C2,&i2c2_fTemp,&i2c2_fPress);
+        // ZXP8_get_data_454(I2C0,&i2c0_fTemp,&i2c0_fPress);
+        // ZXP8_get_data_454(I2C1,&i2c1_fTemp,&i2c1_fPress);
+        // ZXP2_get_data_454(I2C2,&i2c2_fTemp,&i2c2_fPress);
         #endif
 
         #ifdef BOARD_VER_1
