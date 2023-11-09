@@ -4,52 +4,39 @@
 
 int main(void)
 {
-    int32_t press;
-    int32_t temp = 0;
-    float fTemp = 0;
-    float fPress;
-
-    uint8_t buff = 0x55;
-
-    uint8_t P11ConStatus = 0;
-    int32_t P11ResultP = 0;
-
     init_454();
-    int32_t XX = -200000000;
+
+    float i2c0_fTemp = 0;
+    float i2c0_fPress=0;
+
+    float i2c1_fTemp = 0;
+    float i2c1_fPress=0;
+
+    float i2c2_fTemp = 0;
+    float i2c2_fPress=0;
+
     while (1)
     {
         gpio_bit_toggle(GPIOG, GPIO_PIN_7);
         log_454("\n start!!\n");
+        #ifdef BOARD_VER_2
+        ZXP8_get_data_454(I2C0,&i2c0_fTemp,&i2c0_fPress);
+        ZXP8_get_data_454(I2C1,&i2c1_fTemp,&i2c1_fPress);
+        ZXP2_get_data_454(I2C2,&i2c2_fTemp,&i2c2_fPress);
+        #endif
 
-        P11_Initial();
+        #ifdef BOARD_VER_1
+        ZXP8_get_data_454(I2C0,&i2c0_fTemp,&i2c0_fPress);
+        ZXP2_get_data_454(I2C1,&i2c1_fTemp,&i2c1_fPress);
+        ZXP8_get_data_454(I2C2,&i2c2_fTemp,&i2c2_fPress);
+        #endif
 
-        P11_StartT();
-        ms_delay_454(4);
-        do
-        {
-            ms_delay_454(1);
-        } while (P11_ConStatus());
-        temp = P11_ResultT();
+        // log_454("\n fTemp:");
+        // log_454(floatToStr(fTemp, 2));
+        // log_454("\n fPress:");
+        // log_454(floatToStr(fPress, 2));
 
-        P11_StartP();
-        ms_delay_454(12);
-        do
-        {
-            ms_delay_454(1);
-        } while (P11_ConStatus());
-        press = P11_ResultP();
-
-
-        // log_454(intToStr(press));
-        P11_Caculate(press, temp, &fPress, &fTemp);
-
-        log_454("\n fTemp:");
-        log_454(floatToStr(fTemp,2));
-        log_454("\n fPress:");
-        log_454(floatToStr(fPress,2));
-        
-
-        ms_delay_454(500);
+        ms_delay_454(1000);
     }
     return 0;
 }

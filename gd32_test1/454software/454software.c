@@ -1,9 +1,7 @@
 #include "./454software.h"
+
 /*!
-    \brief      initialize all 454
-    \param[in]  none
-    \param[out] none
-    \retval     none
+    initialize all 454
 */
 char strOutput_454[MAX_STR_SIZE]; // 存储转换后的字符串
 
@@ -11,14 +9,83 @@ void init_454(void)
 {
     RCU_init_454();
     NVIC_init_454();
-    /* Configure GPIO */
+    I2C_init_454();
+    LED_init_454();
+    TIMER_init_454();
+    USART0_init_454();
+    USART1_init_454();
 
     /* 配置PC9为CKOUT1 */
-    gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
-    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_9);
-    gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
-    rcu_ckout1_config(RCU_CKOUT1SRC_SYSTEMCLOCK, RCU_CKOUT1_DIV1);
+    // gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
+    // gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_9);
+    // gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
+    // rcu_ckout1_config(RCU_CKOUT1SRC_SYSTEMCLOCK, RCU_CKOUT1_DIV1);
 
+    // 配置PE0,PE1,PE2
+    // gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_0);
+    // gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_0);
+    // gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_1);
+    // gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
+    // gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_2);
+    // gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
+
+    // gpio_bit_set(GPIOE, GPIO_PIN_0);
+    // gpio_bit_set(GPIOE, GPIO_PIN_1);
+    // gpio_bit_set(GPIOE, GPIO_PIN_2);
+
+    // 配置PA6,PC6,PD12
+    // gpio_mode_set(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_6);
+    // gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
+    // gpio_mode_set(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_6);
+    // gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
+    // gpio_mode_set(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_12);
+    // gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_12);
+
+    // gpio_bit_set(GPIOA, GPIO_PIN_6);
+    // gpio_bit_set(GPIOC, GPIO_PIN_6);
+    // gpio_bit_set(GPIOD, GPIO_PIN_12);
+}
+
+void RCU_init_454(void)
+{
+    rcu_periph_clock_enable(RCU_GPIOA);
+    rcu_periph_clock_enable(RCU_GPIOB);
+    rcu_periph_clock_enable(RCU_GPIOC);
+    rcu_periph_clock_enable(RCU_GPIOD);
+    rcu_periph_clock_enable(RCU_GPIOE);
+    rcu_periph_clock_enable(RCU_GPIOF);
+    rcu_periph_clock_enable(RCU_GPIOG);
+
+    rcu_periph_clock_enable(RCU_TIMER6);
+    rcu_periph_clock_enable(RCU_USART0);
+    rcu_periph_clock_enable(RCU_USART1);
+    rcu_periph_clock_enable(RCU_DMA0);
+    rcu_periph_clock_enable(RCU_DMA1);
+    rcu_periph_clock_enable(RCU_I2C0);
+    rcu_periph_clock_enable(RCU_I2C1);
+    rcu_periph_clock_enable(RCU_I2C2);
+
+    rcu_ahb_clock_config(RCU_AHB_CKSYS_DIV1);
+    rcu_apb1_clock_config(RCU_APB1_CKAHB_DIV1);
+}
+
+void NVIC_init_454(void)
+{
+    nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
+    // 数字越小，优先级越高
+    nvic_irq_enable(DMA0_Channel6_IRQn, 0, 7);
+    nvic_irq_enable(DMA1_Channel7_IRQn, 0, 6);
+
+    // nvic_irq_enable(I2C0_EV_IRQn, 0, 3);
+    // nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
+    // nvic_irq_enable(I2C0_ER_IRQn, 0, 2);
+    // nvic_irq_enable(I2C1_ER_IRQn, 0, 1);
+}
+
+void LED_init_454(void)
+{
     // 配置PG6,PG7,PG8
     gpio_mode_set(GPIOG, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_6);
     gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
@@ -30,33 +97,10 @@ void init_454(void)
     gpio_bit_set(GPIOG, GPIO_PIN_6);
     gpio_bit_set(GPIOG, GPIO_PIN_7);
     gpio_bit_set(GPIOG, GPIO_PIN_8);
+}
 
-    // 配置PE0,PE1,PE2
-    gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_0);
-    gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_0);
-    gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_1);
-    gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
-    gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_2);
-    gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
-
-    gpio_bit_set(GPIOE, GPIO_PIN_0);
-    gpio_bit_set(GPIOE, GPIO_PIN_1);
-    gpio_bit_set(GPIOE, GPIO_PIN_2);
-
-    // 配置PA6,PC6,PD12
-    gpio_mode_set(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_6);
-    gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
-
-    gpio_mode_set(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_6);
-    gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
-
-    gpio_mode_set(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_12);
-    gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_12);
-
-    gpio_bit_set(GPIOA, GPIO_PIN_6);
-    gpio_bit_set(GPIOC, GPIO_PIN_6);
-    gpio_bit_set(GPIOD, GPIO_PIN_12);
-
+void TIMER_init_454(void)
+{
     /* Configure TIMER6 */
     timer_deinit(RCU_TIMER6);
     timer_parameter_struct timer_initpara;
@@ -67,6 +111,10 @@ void init_454(void)
     timer_initpara.clockdivision = TIMER_CKDIV_DIV1;
     timer_init(TIMER6, &timer_initpara);
     timer_enable(TIMER6);
+}
+
+void USART1_init_454(void)
+{
 
     /* Configure USART1 */
     usart_deinit(USART1);
@@ -106,10 +154,63 @@ void init_454(void)
     // Configure USART1 RX (PD6) as floating input
     gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_6);
     gpio_mode_set(GPIOD, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_6);
+    gpio_output_options_set(GPIOD, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
     usart_prescaler_config(USART1, 1U);
     usart_enable(USART1);
+}
 
-    /* Configure I2C0 P10 PB8 PB9*/
+void USART0_init_454(void)
+{
+    /* Configure USART1 */
+    usart_deinit(USART0);
+    usart_disable(USART0);
+    usart_word_length_set(USART0, USART_WL_8BIT);
+    usart_stop_bit_set(USART0, USART_STB_1BIT);
+    usart_baudrate_set(USART0, 115200U);
+    usart_parity_config(USART0, USART_PM_NONE);
+
+    usart_hardware_flow_rts_config(USART0, USART_RTS_DISABLE);
+    usart_hardware_flow_cts_config(USART0, USART_CTS_DISABLE);
+    usart_receive_config(USART0, USART_RECEIVE_ENABLE);
+    usart_transmit_config(USART0, USART_TRANSMIT_ENABLE);
+    usart_dma_receive_config(USART0, USART_DENR_ENABLE);
+    usart_dma_transmit_config(USART0, USART_DENT_ENABLE);
+
+    /* Configure USART1 TX DMA */
+    dma_deinit(DMA1, DMA_CH7);
+    dma_multi_data_parameter_struct dma_init_struct;
+    dma_multi_data_para_struct_init(&dma_init_struct);
+    dma_init_struct.periph_addr = (uint32_t)&USART_DATA(USART0);
+    dma_init_struct.periph_width = DMA_PERIPH_WIDTH_8BIT;
+    dma_init_struct.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
+    dma_init_struct.memory_width = DMA_MEMORY_WIDTH_8BIT;
+    dma_init_struct.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
+    dma_init_struct.direction = DMA_MEMORY_TO_PERIPH;
+    dma_init_struct.priority = DMA_PRIORITY_LOW;
+    dma_multi_data_mode_init(DMA1, DMA_CH7, &dma_init_struct);
+    dma_channel_subperipheral_select(DMA1, DMA_CH7, DMA_SUBPERI4);
+    dma_interrupt_enable(DMA1, DMA_CH7, DMA_CHXCTL_FTFIE);
+
+    // Configure USART1 TX (PA9) as alternate function push-pull
+    gpio_af_set(GPIOA, GPIO_AF_7, GPIO_PIN_9);
+    gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_9);
+    gpio_output_options_set(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
+
+    // Configure USART1 RX (PA10) as floating input
+    gpio_af_set(GPIOA, GPIO_AF_7, GPIO_PIN_10);
+    gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_10);
+    gpio_output_options_set(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_10);
+
+    usart_prescaler_config(USART0, 1U);
+    usart_enable(USART0);
+}
+
+
+void I2C_init_454(void)
+{
+#ifdef BOARD_VER_1
+    /* Configure I2C0 P10 PB6 PB7*/
     gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_9); // I2C0_SDA
     gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_8); // I2C0_SCL
 
@@ -120,12 +221,12 @@ void init_454(void)
     gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
 
     i2c_deinit(I2C0);
-    i2c_clock_config(I2C0, 100000, I2C_DTCY_2);
+    i2c_clock_config(I2C0, 400000, I2C_DTCY_2);
     i2c_mode_addr_config(I2C0, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, I2C0_OWN_ADDRESS7);
     i2c_enable(I2C0);
     i2c_ack_config(I2C0, I2C_ACK_ENABLE);
 
-    /* Configure I2C1 P11 PF0 PF1 */
+    /* Configure I2C1 P11 PB10 PB11 */
     gpio_af_set(GPIOF, GPIO_AF_4, GPIO_PIN_0); // I2C1_SDA
     gpio_af_set(GPIOF, GPIO_AF_4, GPIO_PIN_1); // I2C1_SCL
 
@@ -136,44 +237,83 @@ void init_454(void)
     gpio_output_options_set(GPIOF, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
 
     i2c_deinit(I2C1);
-    i2c_clock_config(I2C1, 100000, I2C_DTCY_2);
+    i2c_clock_config(I2C1, 400000, I2C_DTCY_2);
     // i2c_interrupt_enable(I2C1,I2C_INT_EV);
     i2c_mode_addr_config(I2C1, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, I2C1_OWN_ADDRESS7);
     i2c_enable(I2C1);
     i2c_ack_config(I2C1, I2C_ACK_ENABLE);
+
+    /* Configure I2C2 PA8 PC9 */
+    gpio_af_set(GPIOC, GPIO_AF_4, GPIO_PIN_9); // I2C1_SDA
+    gpio_af_set(GPIOA, GPIO_AF_4, GPIO_PIN_8); // I2C1_SCL
+
+    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_9);
+    gpio_output_options_set(GPIOC, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
+
+    gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_8);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_8);
+
+    i2c_deinit(I2C2);
+    i2c_clock_config(I2C2, 400000, I2C_DTCY_2);
+    // i2c_interrupt_enable(I2C1,I2C_INT_EV);
+    i2c_mode_addr_config(I2C2, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, I2C1_OWN_ADDRESS7);
+    i2c_enable(I2C2);
+    i2c_ack_config(I2C2, I2C_ACK_ENABLE);
+#endif
+
+#ifdef BOARD_VER_2
+    /* Configure I2C0 P10 PB6 PB7*/
+    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_7); // I2C0_SDA
+    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_6); // I2C0_SCL
+
+    gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_6);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
+    gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_7);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_7);
+
+    i2c_deinit(I2C0);
+    i2c_clock_config(I2C0, 400000, I2C_DTCY_2);
+    i2c_mode_addr_config(I2C0, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, I2C0_OWN_ADDRESS7);
+    i2c_enable(I2C0);
+    i2c_ack_config(I2C0, I2C_ACK_ENABLE);
+
+    /* Configure I2C1 P11 PB10 PB11 */
+    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_11); // I2C1_SDA
+    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_10); // I2C1_SCL
+
+    gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_11);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_11);
+
+    gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_10);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_10);
+
+    i2c_deinit(I2C1);
+    i2c_clock_config(I2C1, 400000, I2C_DTCY_2);
+    // i2c_interrupt_enable(I2C1,I2C_INT_EV);
+    i2c_mode_addr_config(I2C1, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, I2C1_OWN_ADDRESS7);
+    i2c_enable(I2C1);
+    i2c_ack_config(I2C1, I2C_ACK_ENABLE);
+
+    /* Configure I2C2 PA8 PC9 */
+    gpio_af_set(GPIOC, GPIO_AF_4, GPIO_PIN_9); // I2C1_SDA
+    gpio_af_set(GPIOA, GPIO_AF_4, GPIO_PIN_8); // I2C1_SCL
+
+    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_9);
+    gpio_output_options_set(GPIOC, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
+
+    gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_8);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_8);
+
+    i2c_deinit(I2C2);
+    i2c_clock_config(I2C2, 400000, I2C_DTCY_2);
+    // i2c_interrupt_enable(I2C1,I2C_INT_EV);
+    i2c_mode_addr_config(I2C2, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, I2C1_OWN_ADDRESS7);
+    i2c_enable(I2C2);
+    i2c_ack_config(I2C2, I2C_ACK_ENABLE);
+#endif
 }
 
-void RCU_init_454(void)
-{
-    rcu_periph_clock_enable(RCU_GPIOA);
-    rcu_periph_clock_enable(RCU_GPIOB);
-    rcu_periph_clock_enable(RCU_GPIOC);
-    rcu_periph_clock_enable(RCU_GPIOD);
-    rcu_periph_clock_enable(RCU_GPIOE);
-    rcu_periph_clock_enable(RCU_GPIOF);
-    rcu_periph_clock_enable(RCU_GPIOG);
-
-    rcu_periph_clock_enable(RCU_TIMER6);
-    rcu_periph_clock_enable(RCU_USART1);
-    rcu_periph_clock_enable(RCU_DMA0);
-    rcu_periph_clock_enable(RCU_I2C0);
-    rcu_periph_clock_enable(RCU_I2C1);
-
-    rcu_ahb_clock_config(RCU_AHB_CKSYS_DIV1);
-    rcu_apb1_clock_config(RCU_APB1_CKAHB_DIV1);
-}
-
-void NVIC_init_454(void)
-{
-    nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
-    // 数字越小，优先级越高
-    nvic_irq_enable(DMA0_Channel6_IRQn, 0, 7);
-
-    // nvic_irq_enable(I2C0_EV_IRQn, 0, 3);
-    // nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
-    // nvic_irq_enable(I2C0_ER_IRQn, 0, 2);
-    // nvic_irq_enable(I2C1_ER_IRQn, 0, 1);
-}
 /*!
     \brief      ms_delay
     \param[in]  ms: 16 bit
@@ -224,9 +364,29 @@ int log_454(uint8_t *string)
             return -1;
         }
     }
-    usart1_send_454(string, count_size);
+    usart0_send_454(string, count_size);
 
     return 0;
+}
+
+uint8_t usart0_send_454(uint8_t *string, uint16_t count_size)
+{
+    while (DMA_CHCTL(DMA1, DMA_CH7) & DMA_CHXCTL_CHEN)
+    {
+    }
+    while (RESET == usart_flag_get(USART0, USART_FLAG_TC))
+    {
+    }
+    dma_memory_address_config(DMA1, DMA_CH7, DMA_MEMORY_0, string);
+    dma_transfer_number_config(DMA1, DMA_CH7, count_size);
+    dma_channel_enable(DMA1, DMA_CH7);
+    return 0;
+}
+uint8_t usart0_receive_454(void)
+{
+    while (usart_flag_get(USART1, USART_FLAG_RBNE) == RESET)
+        ;
+    return usart_data_receive(USART1);
 }
 
 uint8_t usart1_send_454(uint8_t *string, uint16_t count_size)
@@ -242,7 +402,6 @@ uint8_t usart1_send_454(uint8_t *string, uint16_t count_size)
     dma_channel_enable(DMA0, DMA_CH6);
     return 0;
 }
-
 uint8_t usart1_receive_454(void)
 {
     while (usart_flag_get(USART1, USART_FLAG_RBNE) == RESET)
@@ -511,7 +670,7 @@ void i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16
     i2c_flag_clear(i2c_periph, I2C_FLAG_ADDSEND);
     while (length--)
     {
-        while (!i2c_flag_get(I2C0, I2C_FLAG_TBE))
+        while (!i2c_flag_get(i2c_periph, I2C_FLAG_TBE))
             ;
         i2c_data_transmit(i2c_periph, *data++);
     }
@@ -520,60 +679,78 @@ void i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16
         ;
 }
 
-uint8_t P11_Initial(void)
+uint8_t ZXP_Initial(uint32_t i2c_periph)
 {
-    i2c_master_send(I2C0, ZXP3010D_Address, 1, ZXP3010D_Address);
+    i2c_master_send(i2c_periph, ZXP3010D_Address, 1, ZXP3010D_Address);
 }
 
-void P11_StartP(void)
+void ZXP_StartP(uint32_t i2c_periph)
 {
-    uint8_t buf[4];
+    uint8_t buf[4] = {0};
 
     buf[0] = 0xA5;
     // buf[1] = 0x13;输出原始ADC值
     buf[1] = 0x11; // 输出校准数据
 
-    i2c_master_send(I2C0, buf, 2, ZXP3010D_Address);
+    i2c_master_send(i2c_periph, buf, 2, ZXP3010D_Address);
 
     buf[0] = 0x30;
     buf[1] = 0x09;
-    i2c_master_send(I2C0, buf, 2, ZXP3010D_Address);
+    i2c_master_send(i2c_periph, buf, 2, ZXP3010D_Address);
+
+    
+
+    // 获取全部寄存器的值
+    uint8_t reg_cmd[4] = {0};
+    uint8_t reg[4] = {0};
+    reg_cmd[0] = 0x30;  //0x01
+    reg_cmd[1] = 0x6c;  //0x02
+    reg_cmd[2] = 0xa5;  //0x11
+
+    i2c_master_send(i2c_periph, &reg_cmd[0], 1, ZXP3010D_Address);
+    i2c_master_receive(i2c_periph, &reg[0], 1, ZXP3010D_Address);
+
+    i2c_master_send(i2c_periph, &reg_cmd[1], 1, ZXP3010D_Address);
+    i2c_master_receive(i2c_periph, &reg[1], 1, ZXP3010D_Address);
+
+    i2c_master_send(i2c_periph, &reg_cmd[2], 1, ZXP3010D_Address);
+    i2c_master_receive(i2c_periph, &reg[2], 1, ZXP3010D_Address);
 }
 
-void P11_StartT(void)
+void ZXP_StartT(uint32_t i2c_periph)
 {
     uint8_t buf[4];
 
     buf[0] = 0xA5;
     buf[1] = 0x01;
-    i2c_master_send(I2C0, buf, 2, ZXP3010D_Address);
+    i2c_master_send(i2c_periph, buf, 2, ZXP3010D_Address);
 
     buf[0] = 0x30;
     buf[1] = 0x08;
-    i2c_master_send(I2C0, buf, 2, ZXP3010D_Address);
+    i2c_master_send(i2c_periph, buf, 2, ZXP3010D_Address);
 }
 
-uint8_t P11_ConStatus(void)
+uint8_t ZXP_ConStatus(uint32_t i2c_periph)
 {
     uint8_t status;
     uint8_t buf[4] = {0};
 
     buf[0] = ZXP3010D_CMD;
-    i2c_master_send(I2C0, buf, 1, ZXP3010D_Address);
+    i2c_master_send(i2c_periph, buf, 1, ZXP3010D_Address);
 
-    i2c_master_receive(I2C0, buf, 1, ZXP3010D_Address);
+    i2c_master_receive(i2c_periph, buf, 1, ZXP3010D_Address);
     status = (buf[0] >> 3) & 0x01;
     return status;
 }
 
-int32_t P11_ResultP(void)
+int32_t ZXP_ResultP(uint32_t i2c_periph)
 {
 
     int32_t ltemp;
     uint8_t buf[4];
     buf[0] = 0x06;
-    i2c_master_send(I2C0, buf, 1, ZXP3010D_Address);
-    i2c_master_receive(I2C0, buf, 3, ZXP3010D_Address);
+    i2c_master_send(i2c_periph, buf, 1, ZXP3010D_Address);
+    i2c_master_receive(i2c_periph, buf, 3, ZXP3010D_Address);
 
     ltemp = buf[0] << 8;
     ltemp |= buf[1];
@@ -582,14 +759,16 @@ int32_t P11_ResultP(void)
     return (ltemp);
 }
 
-int32_t P11_ResultT(void)
+int32_t ZXP_ResultT(uint32_t i2c_periph)
 {
     int32_t ltemp;
-    uint8_t buf[4];
+    uint8_t cmd[2] = {0};
+    uint8_t buf[2] = {0};
 
-    buf[0] = 0x09;
-    i2c_master_send(I2C0, buf, 1, ZXP3010D_Address);
-    i2c_master_receive(I2C0, buf, 2, ZXP3010D_Address);
+    cmd[0] = 0x09;
+    cmd[1] = 0x0a;
+    i2c_master_send(i2c_periph, &cmd[0], 1, ZXP3010D_Address);
+    i2c_master_receive(i2c_periph, &buf[0], 2, ZXP3010D_Address);
 
     ltemp = buf[0] << 8;
     ltemp |= buf[1];
@@ -597,24 +776,94 @@ int32_t P11_ResultT(void)
     return (ltemp);
 }
 
-void P11_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
+void ZXP8_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
 {
     float fp, ft, ftemp;
 
-    //温度值正负判断
+    // 温度值正负判断
     ft = ut;
     if (ft >= pow(2.0, 15.0))
-    ft = ft - pow(2.0, 16.0);
-    //压力值正负判断
+        ft = ft - pow(2.0, 16.0);
+    // 压力值正负判断
     ftemp = up;
     if (ftemp >= pow(2.0, 23.0))
-    ftemp = ftemp - pow(2.0, 24.0);
-    ftemp = ftemp / pow(2.0, 12.0); // n=13  1Kpa// n=14  500pa//12 2kpa  //11 4kpa; // 9 10kpa //  6  100kpa
+        ftemp = ftemp - pow(2.0, 24.0);
+    ftemp = ftemp / pow(2.0, 9.0); // n=13  1Kpa// n=14  500pa//12 2kpa  //11 4kpa; // 9 10kpa //  6  100kpa
 
     ft = ft / 256.0;
     fp = ftemp;
     *rp = fp;
     *rt = ft;
+}
+
+void ZXP2_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
+{
+    float fp, ft, ftemp;
+
+    // 温度值正负判断
+    ft = ut;
+    if (ft >= pow(2.0, 15.0))
+        ft = ft - pow(2.0, 16.0);
+    // 压力值正负判断
+    ftemp = up;
+    if (ftemp >= pow(2.0, 23.0))
+        ftemp = ftemp - pow(2.0, 24.0);
+    ftemp = ftemp / pow(2.0, 6.0); // n6  100kpa
+
+    ft = ft / 256.0;
+    fp = ftemp;
+    *rp = fp;
+    *rt = ft;
+}
+
+void ZXP8_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
+{
+    int32_t press;
+    int32_t temp = 0;
+    ZXP_Initial(i2c_periph);
+
+    ZXP_StartT(i2c_periph);
+    ms_delay_454(4);
+    do
+    {
+        ms_delay_454(1);
+    } while (ZXP_ConStatus(i2c_periph));
+    temp = ZXP_ResultT(i2c_periph);
+
+    ZXP_StartP(i2c_periph);
+    ms_delay_454(12);
+    do
+    {
+        ms_delay_454(1);
+    } while (ZXP_ConStatus(i2c_periph));
+    press = ZXP_ResultP(i2c_periph);
+
+    ZXP8_Caculate(press, temp, fPress, fTemp);
+}
+
+void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
+{
+    int32_t press;
+    int32_t temp = 0;
+    ZXP_Initial(i2c_periph);
+
+    ZXP_StartT(i2c_periph);
+    ms_delay_454(4);
+    do
+    {
+        ms_delay_454(1);
+    } while (ZXP_ConStatus(i2c_periph));
+    temp = ZXP_ResultT(i2c_periph);
+
+    ZXP_StartP(i2c_periph);
+    ms_delay_454(12);
+    do
+    {
+        ms_delay_454(1);
+    } while (ZXP_ConStatus(i2c_periph));
+    press = ZXP_ResultP(i2c_periph);
+
+    ZXP2_Caculate(press, temp, fPress, fTemp);
 }
 
 // 中断函数
