@@ -206,7 +206,6 @@ void USART0_init_454(void)
     usart_enable(USART0);
 }
 
-
 void I2C_init_454(void)
 {
 #ifdef BOARD_VER_1
@@ -351,6 +350,7 @@ void s_delay_454(uint32_t seconds)
     }
 }
 
+#ifdef BOARD_VER_2
 int log_454(uint8_t *string)
 {
     uint8_t *start = string;
@@ -368,6 +368,27 @@ int log_454(uint8_t *string)
 
     return 0;
 }
+#endif
+
+#ifdef BOARD_VER_1
+int log_454(uint8_t *string)
+{
+    uint8_t *start = string;
+    uint16_t count_size = 0;
+    while (*start++)
+    {
+        count_size++;
+        if (count_size > 1024)
+        {
+            log_454("string is too long!");
+            return -1;
+        }
+    }
+    usart1_send_454(string, count_size);
+
+    return 0;
+}
+#endif
 
 uint8_t usart0_send_454(uint8_t *string, uint16_t count_size)
 {
@@ -442,17 +463,15 @@ char *intToStr(int num)
 
     *end = '\0'; // Null-terminate
 
-    // Reverse the string (excluding negative sign, if any)
-    char *revStart = (start == end - 1) ? start : start + 1;
-    char *revEnd = end - 1;
+    // Reverse the string
+    char *revStart = start + (*start == '-' ? 1 : 0); // Skip the negative sign if it exists
+    char *revEnd = end - 1;                           // Set the end pointer just before the null terminator
     char temp;
     while (revStart < revEnd)
     {
         temp = *revStart;
-        *revStart = *revEnd;
-        *revEnd = temp;
-        revStart++;
-        revEnd--;
+        *revStart++ = *revEnd;
+        *revEnd-- = temp;
     }
 
     return start;
@@ -520,6 +539,13 @@ char *floatToStr(float num, int afterpoint)
     *end = '\0'; // Null-terminate
 
     return start;
+}
+
+void mark________________(int LINE)
+{
+    log_454("\n");
+    log_454(intToStr(LINE));
+    log_454("\n");
 }
 
 void send_register_value(uintptr_t reg_address, uint8_t reg_size)
@@ -682,12 +708,26 @@ void i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16
 uint8_t ZXP_Initial(uint32_t i2c_periph)
 {
     i2c_master_send(i2c_periph, ZXP3010D_Address, 1, ZXP3010D_Address);
+
+    // 获取全部寄存器的值
+    // uint8_t reg_cmd[4] = {0};
+    // uint8_t reg[4] = {0};
+    // reg_cmd[0] = 0x30; // 0x01
+    // reg_cmd[1] = 0x6c; // 0x02
+    // reg_cmd[2] = 0xa5; // 0x11
+
+    // i2c_master_send(i2c_periph, &reg_cmd[0], 1, ZXP3010D_Address);
+    // i2c_master_receive(i2c_periph, &reg[0], 1, ZXP3010D_Address);
+    // i2c_master_send(i2c_periph, &reg_cmd[1], 1, ZXP3010D_Address);
+    // i2c_master_receive(i2c_periph, &reg[1], 1, ZXP3010D_Address);
+    // i2c_master_send(i2c_periph, &reg_cmd[2], 1, ZXP3010D_Address);
+    // i2c_master_receive(i2c_periph, &reg[2], 1, ZXP3010D_Address);
 }
 
 void ZXP_StartP(uint32_t i2c_periph)
 {
-    uint8_t buf[4] = {0};
 
+    uint8_t buf[4] = {0};
     buf[0] = 0xA5;
     // buf[1] = 0x13;输出原始ADC值
     buf[1] = 0x11; // 输出校准数据
@@ -697,24 +737,6 @@ void ZXP_StartP(uint32_t i2c_periph)
     buf[0] = 0x30;
     buf[1] = 0x09;
     i2c_master_send(i2c_periph, buf, 2, ZXP3010D_Address);
-
-    
-
-    // 获取全部寄存器的值
-    uint8_t reg_cmd[4] = {0};
-    uint8_t reg[4] = {0};
-    reg_cmd[0] = 0x30;  //0x01
-    reg_cmd[1] = 0x6c;  //0x02
-    reg_cmd[2] = 0xa5;  //0x11
-
-    i2c_master_send(i2c_periph, &reg_cmd[0], 1, ZXP3010D_Address);
-    i2c_master_receive(i2c_periph, &reg[0], 1, ZXP3010D_Address);
-
-    i2c_master_send(i2c_periph, &reg_cmd[1], 1, ZXP3010D_Address);
-    i2c_master_receive(i2c_periph, &reg[1], 1, ZXP3010D_Address);
-
-    i2c_master_send(i2c_periph, &reg_cmd[2], 1, ZXP3010D_Address);
-    i2c_master_receive(i2c_periph, &reg[2], 1, ZXP3010D_Address);
 }
 
 void ZXP_StartT(uint32_t i2c_periph)
@@ -737,7 +759,6 @@ uint8_t ZXP_ConStatus(uint32_t i2c_periph)
 
     buf[0] = ZXP3010D_CMD;
     i2c_master_send(i2c_periph, buf, 1, ZXP3010D_Address);
-
     i2c_master_receive(i2c_periph, buf, 1, ZXP3010D_Address);
     status = (buf[0] >> 3) & 0x01;
     return status;
@@ -846,7 +867,6 @@ void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
     int32_t press;
     int32_t temp = 0;
     ZXP_Initial(i2c_periph);
-
     ZXP_StartT(i2c_periph);
     ms_delay_454(4);
     do
@@ -854,7 +874,6 @@ void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
         ms_delay_454(1);
     } while (ZXP_ConStatus(i2c_periph));
     temp = ZXP_ResultT(i2c_periph);
-
     ZXP_StartP(i2c_periph);
     ms_delay_454(12);
     do

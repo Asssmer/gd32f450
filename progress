@@ -1,5 +1,10 @@
 RTC .
 GPIO .
-I2C  ..
+I2C  ..// 绝压传感器需要更换
 USART1 TX.
 USART0 TX.
+
+
+SPI
+ADC
+PWM

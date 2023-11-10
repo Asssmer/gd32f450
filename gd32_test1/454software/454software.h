@@ -15,20 +15,19 @@
 // #define BOARD_VER_1
 #define BOARD_VER_2
 
+
+
 #define MAX_STR_SIZE 12 // 最大字符串长度，考虑到32位整数最大为10位，加上符号和空字符
 
 #define I2C0_OWN_ADDRESS7 0x72
 #define I2C1_OWN_ADDRESS7 0x92
 
 #define ZXP3010D_Address 0xDA
-#define ZXP3010D_ADC_LSB 0x08
-#define ZXP3010D_ADC_LCB 0x07
-#define ZXP3010D_ADC_MSB 0x06
-#define ZXP3010D_TEMP_LSB 0x0A
-#define ZXP3010D_TEMP_MSB 0x09
-#define ZXP3010D_STATUS 0x02
 #define ZXP3010D_CMD 0x30
-#define ZXP3010D_DRDY 0x01
+
+#define MHFS4301_Address 0x50
+#define MHFS4301_CMD 0xa1
+
 
 
 void init_454(void);
@@ -48,6 +47,8 @@ void s_delay_454(uint32_t seconds);
 int log_454(uint8_t *string);
 char *intToStr(int num);
 char *floatToStr(float num, int afterpoint);
+void mark________________(int LINE);
+
 void send_register_value(uintptr_t reg_address, uint8_t reg_size);
 
 uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, uint32_t flag, FlagStatus expected_Status);
