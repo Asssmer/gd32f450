@@ -575,21 +575,21 @@ void send_register_value(uintptr_t reg_address, uint8_t reg_size)
     }
 }
 
-uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, uint32_t flag, FlagStatus expected_Status)
+uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, i2c_flag_enum flag, FlagStatus expected_Status)
 {
     uint32_t timeout = 0xFFFF;
     while (i2c_flag_get(i2c_periph, flag) != expected_Status)
     {
         if (timeout == 0)
         {
-            return 0; // Timeout
+            return 1; // Timeout
         }
         timeout--;
     }
-    return 1; // Success
+    return 0; // Success
 }
 
-void i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address)
+int i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address)
 {
     if (length == 2)
     {
@@ -616,7 +616,7 @@ void i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uin
         while (I2C_CTL0(i2c_periph) & I2C_CTL0_STOP)
             ;
         i2c_ack_config(i2c_periph, I2C_ACK_ENABLE);
-        return;
+        return 0;
     }
     else if (length == 2)
     {
@@ -636,7 +636,7 @@ void i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uin
             ;
         i2c_ackpos_config(i2c_periph, I2C_ACKPOS_CURRENT);
         i2c_ack_config(i2c_periph, I2C_ACK_ENABLE);
-        return;
+        return 0;
     }
     else if (length > 2)
     {
@@ -675,15 +675,15 @@ void i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uin
             ;
         i2c_ack_config(i2c_periph, I2C_ACK_ENABLE);
 
-        return;
+        return 0;
     }
     else
     {
-        return;
+        return 0;
     }
 }
 
-void i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address)
+int i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address)
 {
     while (i2c_flag_get(i2c_periph, I2C_FLAG_I2CBSY))
         ;
@@ -691,8 +691,17 @@ void i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16
     while (!i2c_flag_get(i2c_periph, I2C_FLAG_SBSEND))
         ;
     i2c_master_addressing(i2c_periph, address, I2C_TRANSMITTER);
-    while (!i2c_flag_get(i2c_periph, I2C_FLAG_ADDSEND))
-        ;
+
+    if (i2c_flag_check_timeout(i2c_periph, I2C_FLAG_ADDSEND, SET))
+    {
+        i2c_stop_on_bus(i2c_periph);
+        while (I2C_CTL0(i2c_periph) & I2C_CTL0_STOP)
+            ;
+        return 1;
+    }
+
+    // while (!i2c_flag_get(i2c_periph, I2C_FLAG_ADDSEND))
+    //     ;
     i2c_flag_clear(i2c_periph, I2C_FLAG_ADDSEND);
     while (length--)
     {
@@ -703,6 +712,27 @@ void i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16
     i2c_stop_on_bus(i2c_periph);
     while (I2C_CTL0(i2c_periph) & I2C_CTL0_STOP)
         ;
+    return 0;
+}
+
+void I2C_Scan(uint32_t i2c_periph)
+{
+    log_454("Scanning for I2C devices...\r\n");
+    uint8_t address;
+
+    for (address = 1; address < 127; address++)
+    {
+        if (i2c_master_send(i2c_periph, NULL, 0, address))
+        {
+            continue;
+        }
+        else
+        {
+            log_454(intToStr(address));
+        }
+    }
+
+    log_454("I2C scan completed.\r\n");
 }
 
 uint8_t ZXP_Initial(uint32_t i2c_periph)
@@ -883,6 +913,16 @@ void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
     press = ZXP_ResultP(i2c_periph);
 
     ZXP2_Caculate(press, temp, fPress, fTemp);
+}
+
+void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
+{
+    uint8_t buf[2];
+    i2c_master_send(i2c_periph, FS4301_CMD, 1, FS4301_Address);
+    i2c_master_receive(i2c_periph, buf, 2, FS4301_Address);
+    uint16_t raw_flow = (uint16_t)buf[0] << 8 | buf[1];
+    float actual_flow = (float)raw_flow / 100.00;
+    *flow_data = (float)actual_flow;
 }
 
 // ÖÐ¶Ïº¯Êý

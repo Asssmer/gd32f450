@@ -25,8 +25,8 @@
 #define ZXP3010D_Address 0xDA
 #define ZXP3010D_CMD 0x30
 
-#define MHFS4301_Address 0x50
-#define MHFS4301_CMD 0xa1
+#define FS4301_Address 0xa0
+#define FS4301_CMD 0xa1
 
 
 
@@ -51,7 +51,7 @@ void mark________________(int LINE);
 
 void send_register_value(uintptr_t reg_address, uint8_t reg_size);
 
-uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, uint32_t flag, FlagStatus expected_Status);
+uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, i2c_flag_enum flag, FlagStatus expected_Status);
 
 uint8_t usart0_send_454(uint8_t *string, uint16_t count_size);
 uint8_t usart0_receive_454(void);
@@ -73,9 +73,12 @@ void ZXP2_Caculate(int32_t up, int32_t ut, float *rp, float *rt);
 void ZXP8_get_data_454(uint32_t i2c_periph,float *fTemp, float *fPress);
 void ZXP2_get_data_454(uint32_t i2c_periph,float *fTemp, float *fPress);
 
+void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data);
 
 
 
 
-void i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
-void i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
+
+int i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
+int i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
+void I2C_Scan(uint32_t i2c_periph);
