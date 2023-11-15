@@ -11,6 +11,7 @@
 #include "gd32f4xx_usart.h"
 #include "gd32f4xx_i2c.h"
 #include "gd32f4xx_exti.h"
+#include "gd32f4xx_spi.h"
 
 // #define BOARD_VER_1
 #define BOARD_VER_2
@@ -28,6 +29,15 @@
 #define FS4301_Address 0xa0
 #define FS4301_CMD 0xa1
 
+//SPI
+#define RTD_A 0.0039083
+#define RTD_B -0.0000005775
+#define	RTDnominal 1000
+
+#define	SPI_P7 GPIO_PIN_15
+#define	SPI_P9 GPIO_PIN_12
+
+
 
 
 void init_454(void);
@@ -39,6 +49,7 @@ void TIMER_init_454(void);
 void USART1_init_454(void);
 void USART0_init_454(void);
 void I2C_init_454(void);
+void SPI1_init_454(void);
 
 
 
@@ -77,8 +88,24 @@ void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data);
 
 
 
-
-
 int i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
 int i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
 void I2C_Scan(uint32_t i2c_periph);
+
+
+void MAX31865_CsOn(uint32_t cs_pin);
+void MAX31865_CsOff(uint32_t cs_pin);
+uint8_t SPI1_Transfer(uint32_t cs_pin, uint8_t data);
+void MAX31865_Spi_WriteByte(uint32_t cs_pin, uint8_t data);
+uint8_t MAX31865_Spi_ReadByte(uint32_t cs_pin);
+void MAX31865_bufWrite(uint32_t cs_pin, uint8_t addr, uint8_t value);
+uint8_t MAX31865_bufRead(uint32_t cs_pin, uint8_t addr);
+void MAX31865_HWInit(uint32_t cs_pin);
+int16_t MAX31865_TempGet(uint32_t cs_pin);
+
+
+
+
+
+FlagStatus drdy1_status(void);
+FlagStatus drdy2_status(void);

@@ -14,6 +14,9 @@ void init_454(void)
     TIMER_init_454();
     USART0_init_454();
     USART1_init_454();
+    SPI1_init_454();
+    MAX31865_HWInit(GPIO_PIN_15);
+    MAX31865_HWInit(GPIO_PIN_12);
 
     /* 配置PC9为CKOUT1 */
     // gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
@@ -50,6 +53,9 @@ void init_454(void)
 
 void RCU_init_454(void)
 {
+    rcu_ahb_clock_config(RCU_AHB_CKSYS_DIV1);
+    rcu_apb1_clock_config(RCU_APB1_CKAHB_DIV1);
+
     rcu_periph_clock_enable(RCU_GPIOA);
     rcu_periph_clock_enable(RCU_GPIOB);
     rcu_periph_clock_enable(RCU_GPIOC);
@@ -66,9 +72,7 @@ void RCU_init_454(void)
     rcu_periph_clock_enable(RCU_I2C0);
     rcu_periph_clock_enable(RCU_I2C1);
     rcu_periph_clock_enable(RCU_I2C2);
-
-    rcu_ahb_clock_config(RCU_AHB_CKSYS_DIV1);
-    rcu_apb1_clock_config(RCU_APB1_CKAHB_DIV1);
+    rcu_periph_clock_enable(RCU_SPI1);
 }
 
 void NVIC_init_454(void)
@@ -311,6 +315,62 @@ void I2C_init_454(void)
     i2c_enable(I2C2);
     i2c_ack_config(I2C2, I2C_ACK_ENABLE);
 #endif
+}
+
+void SPI1_init_454(void)
+{
+    // PG0 : DRDY2
+    // PG1 : DRDY1
+    // 设置PG0和PG1为输入模式-->DRDY
+    gpio_mode_set(GPIOG, GPIO_MODE_INPUT, GPIO_PUPD_NONE, GPIO_PIN_0);
+    gpio_mode_set(GPIOG, GPIO_MODE_INPUT, GPIO_PUPD_NONE, GPIO_PIN_1);
+
+    // PB13: SPI1_SCLK
+    // PC3 : SPI1_MOSI
+    // PC2 : SPI1_MISO
+    gpio_af_set(GPIOB, GPIO_AF_5, GPIO_PIN_13); // SCK
+    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_3);  // MOSI
+    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_2);  // MISO
+
+    gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_13);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_13);
+
+    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_3);
+    gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_3);
+
+    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_2);
+    gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
+
+    // PB12 : nCS2
+    // PB15 : nCS1
+    // 设置PB12和PB15为输出模式
+    gpio_mode_set(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_12);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_12);
+
+    gpio_mode_set(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_15);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_15);
+
+    // 将PB12和PB15设置为高电平，禁用片选
+    gpio_bit_set(GPIOB, GPIO_PIN_12);
+    gpio_bit_set(GPIOB, GPIO_PIN_15);
+
+    // 配置SPI1参数
+    spi_i2s_deinit(SPI1);
+    spi_parameter_struct spi_init_struct;
+
+    // 主模式，波特率 f_PCLK/256 (接近于200MHz/256 = 781.25 kHz)，标准模式，8-bit 数据帧格式
+    spi_init_struct.trans_mode = SPI_TRANSMODE_FULLDUPLEX;
+    spi_init_struct.device_mode = SPI_MASTER;
+    spi_init_struct.frame_size = SPI_FRAMESIZE_8BIT;
+    spi_init_struct.clock_polarity_phase = SPI_CK_PL_LOW_PH_1EDGE;
+    spi_init_struct.nss = SPI_NSS_SOFT;
+    spi_init_struct.prescale = SPI_PSC_256;
+    spi_init_struct.endian = SPI_ENDIAN_MSB;
+
+    spi_init(SPI1, &spi_init_struct);
+
+    // 使能SPI1
+    spi_enable(SPI1);
 }
 
 /*!
@@ -722,13 +782,15 @@ void I2C_Scan(uint32_t i2c_periph)
 
     for (address = 1; address < 127; address++)
     {
-        if (i2c_master_send(i2c_periph, NULL, 0, address))
+        if (i2c_master_send(i2c_periph, NULL, 0, address << 1))
         {
             continue;
         }
         else
         {
+            log_454("address:\n");
             log_454(intToStr(address));
+            log_454("\n");
         }
     }
 
@@ -923,6 +985,142 @@ void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
     uint16_t raw_flow = (uint16_t)buf[0] << 8 | buf[1];
     float actual_flow = (float)raw_flow / 100.00;
     *flow_data = (float)actual_flow;
+}
+
+// PB12: SPI1_nCS2
+// PB15: SPI1_nCS1
+
+FlagStatus drdy1_status(void)
+{
+    return gpio_input_bit_get(GPIOG, GPIO_PIN_1);
+}
+
+FlagStatus drdy2_status(void)
+{
+    return gpio_input_bit_get(GPIOG, GPIO_PIN_0);
+}
+
+// if (cs_pin == GPIO_PIN_15)
+// {
+//     // 添加超时逻辑
+//     while (drdy1_status())
+//         ; // 等待DRDY信号1
+// }
+// else if (cs_pin == GPIO_PIN_12)
+// {
+//     while (drdy2_status())
+//         ; // 等待DRDY信号2
+// }
+
+void MAX31865_CsOn(uint32_t cs_pin)
+{
+    gpio_bit_reset(GPIOB, cs_pin);
+}
+void MAX31865_CsOff(uint32_t cs_pin)
+{
+    gpio_bit_set(GPIOB, cs_pin);
+}
+uint8_t SPI1_Transfer(uint32_t cs_pin, uint8_t data)
+{
+    uint8_t data_receive = 0;
+    while (spi_i2s_flag_get(SPI1, SPI_FLAG_TBE) == RESET)
+        ;
+    spi_i2s_data_transmit(SPI1, data); // 发送数据
+    while (spi_i2s_flag_get(SPI1, SPI_FLAG_TRANS) == SET)
+        ;
+    while (spi_i2s_flag_get(SPI1, SPI_FLAG_RBNE) == RESET)
+        ;
+    data_receive = spi_i2s_data_receive(SPI1);
+    return data_receive;
+}
+
+void MAX31865_Spi_WriteByte(uint32_t cs_pin, uint8_t data)
+{
+    SPI1_Transfer(cs_pin, data);
+}
+uint8_t MAX31865_Spi_ReadByte(uint32_t cs_pin)
+{
+    return SPI1_Transfer(cs_pin, 0x00);
+}
+
+void MAX31865_bufWrite(uint32_t cs_pin, uint8_t addr, uint8_t value)
+{
+    MAX31865_CsOn(cs_pin);
+    MAX31865_Spi_WriteByte(cs_pin, addr | 0x80);
+    MAX31865_Spi_WriteByte(cs_pin, value);
+    MAX31865_CsOff(cs_pin);
+}
+uint8_t MAX31865_bufRead(uint32_t cs_pin, uint8_t addr)
+{
+    uint8_t data;
+    MAX31865_CsOn(cs_pin);
+    MAX31865_Spi_WriteByte(cs_pin, addr);
+    data = MAX31865_Spi_ReadByte(cs_pin);
+    MAX31865_CsOff(cs_pin);
+    return data;
+}
+void MAX31865_HWInit(uint32_t cs_pin)
+{
+    MAX31865_bufWrite(cs_pin, 0x00, 0xC3);
+}
+
+int16_t MAX31865_TempGet(uint32_t cs_pin)
+{
+    uint8_t fault;
+    // 读取故障寄存器来检查是否有故障
+    fault = MAX31865_bufRead(cs_pin, 0x07);
+    log_454(intToStr(fault));
+    if (fault)
+    {
+        log_454("Fault detected!");
+        if (fault & 0x01)
+            log_454("RTD low threshold exceeded.");
+        if (fault & 0x02)
+            log_454("RTD high threshold exceeded.");
+        if (fault & 0x04)
+            log_454("Low power mode.");
+        if (fault & 0x08)
+            log_454("Refin- > 0.85 x Vbias.");
+        if (fault & 0x10)
+            log_454("Refin- < 0.85 x Vbias. Force open.");
+        if (fault & 0x20)
+            log_454("RTDIN- < 0.85 x Vbias. Force open.");
+        if (fault & 0x40)
+            log_454("Overvoltage or undervoltage error.");
+        // return 0xFFFF; // 返回错误代码
+    }
+
+    float Z1, Z2, Z3, Z4, Rt, temp;
+    int16_t temp18b20;
+    uint16_t buf = 0;
+
+    buf = MAX31865_bufRead(cs_pin, 0x01);
+    buf = buf << 8;
+    buf = buf + MAX31865_bufRead(cs_pin, 0x02);
+    buf = buf >> 1;
+
+    Rt = buf;
+    Rt /= 32768.00;
+    Rt *= 400;
+
+    log_454("\n Rt::!!");
+    log_454(floatToStr(Rt, 2));
+
+    Z1 = -RTD_A;
+    Z2 = RTD_A * RTD_A - (4 * RTD_B);
+    Z3 = (4 * RTD_B) / RTDnominal;
+    Z4 = 2 * RTD_B;
+
+    temp = Z2 + (Z3 * Rt);
+    temp = (sqrt(temp) + Z1) / Z4;
+
+    temp *= 16;
+    temp18b20 = (int16_t)temp;
+    return temp18b20;
+    //	buf = ADXL355_TempRec();
+    //	temp = (25 - (buf-1852)/9.05)*16;
+    //	temp18b20 = (int16_t)temp;
+    //	return temp18b20;
 }
 
 // 中断函数
