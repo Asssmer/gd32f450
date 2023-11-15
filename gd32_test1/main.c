@@ -27,13 +27,14 @@ int main(void)
         gpio_bit_toggle(GPIOG, GPIO_PIN_7);
         log_454("\n start!!\n");
 
-        // P7_temp = MAX31865_TempGet(SPI_P7);
-        // log_454("\n P7::!!\n");
-        // log_454(intToStr(P7_temp));
-
-        P7_temp = MAX31865_TempGet(SPI_P9);
-        log_454("\n P9::!!\n");
+        P7_temp = MAX31865_TempGet(SPI_P7);
+        log_454("\n P7::!!\n");
         log_454(intToStr(P7_temp));
+
+
+        // P7_temp = MAX31865_TempGet(SPI_P9);
+        // log_454("\n P9::");
+        // log_454(intToStr(P7_temp));
 
         // I2C_Scan(I2C0);
 

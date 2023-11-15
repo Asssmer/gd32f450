@@ -30,9 +30,6 @@
 #define FS4301_CMD 0xa1
 
 //SPI
-#define RTD_A 0.0039083
-#define RTD_B -0.0000005775
-#define	RTDnominal 1000
 
 #define	SPI_P7 GPIO_PIN_15
 #define	SPI_P9 GPIO_PIN_12

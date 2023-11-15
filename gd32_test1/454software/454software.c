@@ -328,18 +328,21 @@ void SPI1_init_454(void)
     // PB13: SPI1_SCLK
     // PC3 : SPI1_MOSI
     // PC2 : SPI1_MISO
-    gpio_af_set(GPIOB, GPIO_AF_5, GPIO_PIN_13); // SCK
-    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_3);  // MOSI
-    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_2);  // MISO
 
+
+    gpio_af_set(GPIOB, GPIO_AF_5, GPIO_PIN_13); // SCK
     gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_13);
     gpio_output_options_set(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_13);
 
+    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_3);  // MOSI
     gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_3);
     gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_3);
 
-    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_2);
+
+    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_2);  // MISO
+    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_2); 
     gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
+
 
     // PB12 : nCS2
     // PB15 : nCS1
@@ -362,7 +365,8 @@ void SPI1_init_454(void)
     spi_init_struct.trans_mode = SPI_TRANSMODE_FULLDUPLEX;
     spi_init_struct.device_mode = SPI_MASTER;
     spi_init_struct.frame_size = SPI_FRAMESIZE_8BIT;
-    spi_init_struct.clock_polarity_phase = SPI_CK_PL_LOW_PH_1EDGE;
+    spi_init_struct.clock_polarity_phase = SPI_CK_PL_LOW_PH_2EDGE;
+    // spi_init_struct.clock_polarity_phase = SPI_CK_PL_HIGH_PH_2EDGE;
     spi_init_struct.nss = SPI_NSS_SOFT;
     spi_init_struct.prescale = SPI_PSC_256;
     spi_init_struct.endian = SPI_ENDIAN_MSB;
@@ -1061,36 +1065,36 @@ uint8_t MAX31865_bufRead(uint32_t cs_pin, uint8_t addr)
 }
 void MAX31865_HWInit(uint32_t cs_pin)
 {
-    MAX31865_bufWrite(cs_pin, 0x00, 0xC3);
+    MAX31865_bufWrite(cs_pin, 0x00, 0xC1);
 }
 
 int16_t MAX31865_TempGet(uint32_t cs_pin)
 {
     uint8_t fault;
     // ¶ÁÈ¡¹ÊÕÏ¼Ä´æÆ÷À´¼ì²éÊÇ·ñÓÐ¹ÊÕÏ
-    fault = MAX31865_bufRead(cs_pin, 0x07);
+    // fault = MAX31865_bufRead(cs_pin, 0x07);
+    fault = MAX31865_bufRead(cs_pin, 0x00);
     log_454(intToStr(fault));
-    if (fault)
-    {
-        log_454("Fault detected!");
-        if (fault & 0x01)
-            log_454("RTD low threshold exceeded.");
-        if (fault & 0x02)
-            log_454("RTD high threshold exceeded.");
-        if (fault & 0x04)
-            log_454("Low power mode.");
-        if (fault & 0x08)
-            log_454("Refin- > 0.85 x Vbias.");
-        if (fault & 0x10)
-            log_454("Refin- < 0.85 x Vbias. Force open.");
-        if (fault & 0x20)
-            log_454("RTDIN- < 0.85 x Vbias. Force open.");
-        if (fault & 0x40)
-            log_454("Overvoltage or undervoltage error.");
-        // return 0xFFFF; // ·µ»Ø´íÎó´úÂë
-    }
+    // if (fault)
+    // {
+    //     log_454("Fault detected!");
+    //     if (fault & 0x01)
+    //         log_454("RTD low threshold exceeded.");
+    //     if (fault & 0x02)
+    //         log_454("RTD high threshold exceeded.");
+    //     if (fault & 0x04)
+    //         log_454("Low power mode.");
+    //     if (fault & 0x08)
+    //         log_454("Refin- > 0.85 x Vbias.");
+    //     if (fault & 0x10)
+    //         log_454("Refin- < 0.85 x Vbias. Force open.");
+    //     if (fault & 0x20)
+    //         log_454("RTDIN- < 0.85 x Vbias. Force open.");
+    //     if (fault & 0x40)
+    //         log_454("Overvoltage or undervoltage error.");
+    // }
 
-    float Z1, Z2, Z3, Z4, Rt, temp;
+    float Z1, Z2, Z3, Z4, Rt,RTD,temp;
     int16_t temp18b20;
     uint16_t buf = 0;
 
@@ -1100,27 +1104,17 @@ int16_t MAX31865_TempGet(uint32_t cs_pin)
     buf = buf >> 1;
 
     Rt = buf;
-    Rt /= 32768.00;
-    Rt *= 400;
+    RTD=Rt*400/32768.00;
+    log_454("\n RTD::!!");
+    log_454(floatToStr(RTD, 2));
 
-    log_454("\n Rt::!!");
-    log_454(floatToStr(Rt, 2));
+    temp=((RTD-100)/0.385055);
 
-    Z1 = -RTD_A;
-    Z2 = RTD_A * RTD_A - (4 * RTD_B);
-    Z3 = (4 * RTD_B) / RTDnominal;
-    Z4 = 2 * RTD_B;
+    log_454("\n TEMP::");
+    log_454(floatToStr(temp, 2));
 
-    temp = Z2 + (Z3 * Rt);
-    temp = (sqrt(temp) + Z1) / Z4;
-
-    temp *= 16;
     temp18b20 = (int16_t)temp;
     return temp18b20;
-    //	buf = ADXL355_TempRec();
-    //	temp = (25 - (buf-1852)/9.05)*16;
-    //	temp18b20 = (int16_t)temp;
-    //	return temp18b20;
 }
 
 // ÖÐ¶Ïº¯Êý
