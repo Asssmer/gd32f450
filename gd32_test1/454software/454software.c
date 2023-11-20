@@ -18,6 +18,8 @@ void init_454(void)
     MAX31865_HWInit(GPIO_PIN_15);
     MAX31865_HWInit(GPIO_PIN_12);
 
+    PSE540_init_454();
+
     /* 配置PC9为CKOUT1 */
     // gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
     // gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_9);
@@ -73,6 +75,7 @@ void RCU_init_454(void)
     rcu_periph_clock_enable(RCU_I2C1);
     rcu_periph_clock_enable(RCU_I2C2);
     rcu_periph_clock_enable(RCU_SPI1);
+    rcu_periph_clock_enable(RCU_ADC2);
 }
 
 void NVIC_init_454(void)
@@ -329,20 +332,17 @@ void SPI1_init_454(void)
     // PC3 : SPI1_MOSI
     // PC2 : SPI1_MISO
 
-
     gpio_af_set(GPIOB, GPIO_AF_5, GPIO_PIN_13); // SCK
     gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_13);
     gpio_output_options_set(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_13);
 
-    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_3);  // MOSI
+    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_3); // MOSI
     gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_3);
     gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_3);
 
-
-    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_2);  // MISO
-    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_2); 
+    gpio_af_set(GPIOC, GPIO_AF_5, GPIO_PIN_2); // MISO
+    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_2);
     gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
-
 
     // PB12 : nCS2
     // PB15 : nCS1
@@ -375,6 +375,23 @@ void SPI1_init_454(void)
 
     // 使能SPI1
     spi_enable(SPI1);
+}
+
+void PSE540_init_454(void)
+{
+    /* 将PF9配置为模拟输入 */
+    gpio_mode_set(GPIOF, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_PIN_9);
+    adc_deinit();
+    adc_clock_config(ADC_ADCCK_HCLK_DIV5);
+    adc_resolution_config(ADC2, ADC_RESOLUTION_12B);
+    adc_enable(ADC2);
+    /* 校准ADC */
+    adc_calibration_enable(ADC2);
+    /* 配置ADC通道，PF9对应于ADC通道7 */
+    adc_regular_channel_config(ADC2, 0, ADC_CHANNEL_7, ADC_SAMPLETIME_15);
+    /* 设置ADC的转换模式为单次转换 */
+    adc_external_trigger_config(ADC2, ADC_REGULAR_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
+    adc_external_trigger_config(ADC2, ADC_INSERTED_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
 }
 
 /*!
@@ -603,6 +620,11 @@ char *floatToStr(float num, int afterpoint)
     *end = '\0'; // Null-terminate
 
     return start;
+}
+
+float adc_to_voltage(uint16_t adc_value)
+{
+    return (adc_value * 3.3f) / 4095;
 }
 
 void mark________________(int LINE)
@@ -1068,7 +1090,7 @@ void MAX31865_HWInit(uint32_t cs_pin)
     MAX31865_bufWrite(cs_pin, 0x00, 0xC1);
 }
 
-int16_t MAX31865_TempGet(uint32_t cs_pin)
+int16_t MAX31865_TempGet_454(uint32_t cs_pin)
 {
     uint8_t fault;
     // 读取故障寄存器来检查是否有故障
@@ -1094,7 +1116,7 @@ int16_t MAX31865_TempGet(uint32_t cs_pin)
     //         log_454("Overvoltage or undervoltage error.");
     // }
 
-    float Z1, Z2, Z3, Z4, Rt,RTD,temp;
+    float Z1, Z2, Z3, Z4, Rt, RTD, temp;
     int16_t temp18b20;
     uint16_t buf = 0;
 
@@ -1104,11 +1126,11 @@ int16_t MAX31865_TempGet(uint32_t cs_pin)
     buf = buf >> 1;
 
     Rt = buf;
-    RTD=Rt*400/32768.00;
+    RTD = Rt * 400 / 32768.00;
     log_454("\n RTD::!!");
     log_454(floatToStr(RTD, 2));
 
-    temp=((RTD-100)/0.385055);
+    temp = ((RTD - 100) / 0.385055);
 
     log_454("\n TEMP::");
     log_454(floatToStr(temp, 2));
@@ -1117,6 +1139,29 @@ int16_t MAX31865_TempGet(uint32_t cs_pin)
     return temp18b20;
 }
 
+uint16_t PSE540_value_read(void)
+{
+    /* 启动ADC转换 */
+    adc_software_trigger_enable(ADC2, ADC_REGULAR_CHANNEL);
+    /* 等待转换完成 */
+    while (adc_flag_get(ADC2, ADC_FLAG_EOC) == RESET)
+        ;
+    /* 读取ADC转换结果 */
+    return adc_regular_data_read(ADC2);
+}
+
+
+
+
+
+//
+//
+//
+//
+//
+//
+//
+//
 // 中断函数
 void I2C1_EV_IRQHandler(void)
 {
