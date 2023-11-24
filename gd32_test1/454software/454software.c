@@ -4,6 +4,9 @@
     initialize all 454
 */
 char strOutput_454[MAX_STR_SIZE]; // 存储转换后的字符串
+volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
+
+
 
 void init_454(void)
 {
@@ -18,39 +21,16 @@ void init_454(void)
     MAX31865_HWInit(GPIO_PIN_15);
     MAX31865_HWInit(GPIO_PIN_12);
 
-    PSE540_init_454();
+    // PSE540_init_454();
+    PWM_init_454();
+    ADC2_DMA_init_454();
+    ADC2_init_454();
 
     /* 配置PC9为CKOUT1 */
     // gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
     // gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_9);
     // gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
     // rcu_ckout1_config(RCU_CKOUT1SRC_SYSTEMCLOCK, RCU_CKOUT1_DIV1);
-
-    // 配置PE0,PE1,PE2
-    // gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_0);
-    // gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_0);
-    // gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_1);
-    // gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
-    // gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_2);
-    // gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
-
-    // gpio_bit_set(GPIOE, GPIO_PIN_0);
-    // gpio_bit_set(GPIOE, GPIO_PIN_1);
-    // gpio_bit_set(GPIOE, GPIO_PIN_2);
-
-    // 配置PA6,PC6,PD12
-    // gpio_mode_set(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_6);
-    // gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
-
-    // gpio_mode_set(GPIOC, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_6);
-    // gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
-
-    // gpio_mode_set(GPIOD, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_12);
-    // gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_12);
-
-    // gpio_bit_set(GPIOA, GPIO_PIN_6);
-    // gpio_bit_set(GPIOC, GPIO_PIN_6);
-    // gpio_bit_set(GPIOD, GPIO_PIN_12);
 }
 
 void RCU_init_454(void)
@@ -65,6 +45,12 @@ void RCU_init_454(void)
     rcu_periph_clock_enable(RCU_GPIOE);
     rcu_periph_clock_enable(RCU_GPIOF);
     rcu_periph_clock_enable(RCU_GPIOG);
+
+    rcu_periph_clock_enable(RCU_TIMER2);
+    rcu_periph_clock_enable(RCU_TIMER3);
+    // rcu_periph_clock_enable(RCU_TIMER7);
+    rcu_periph_clock_enable(RCU_TIMER4);
+    rcu_periph_clock_enable(RCU_TIMER12);
 
     rcu_periph_clock_enable(RCU_TIMER6);
     rcu_periph_clock_enable(RCU_USART0);
@@ -392,6 +378,256 @@ void PSE540_init_454(void)
     /* 设置ADC的转换模式为单次转换 */
     adc_external_trigger_config(ADC2, ADC_REGULAR_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
     adc_external_trigger_config(ADC2, ADC_INSERTED_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
+}
+
+void ADC2_DMA_init_454(void)
+{
+
+    // 复位DMA通道
+    dma_channel_disable(DMA1, DMA_CH0);
+    // 初始化DMA
+    dma_deinit(DMA1, DMA_CH0);
+    // 配置DMA参数结构体
+    dma_single_data_parameter_struct dma_init_struct;
+    dma_single_data_para_struct_init(&dma_init_struct);
+    dma_init_struct.periph_addr = (uint32_t)&ADC_RDATA(ADC2);
+    // 这行代码设置DMA传输的外设地址。这里是ADC2的数据寄存器的地址。在DMA传输中，这个地址将作为数据来源。
+    dma_init_struct.memory0_addr = (uint32_t)&adc_values_454[0];
+    // 这行代码设置DMA传输的目的地内存地址。adc_values是您定义的数组，用于存储从ADC接收到的数据。
+    dma_init_struct.number = ADC_CHANNEL_COUNT;
+    // 这行代码指定DMA要传输的数据数量。ADC_CHANNEL_COUNT应该是您定义的一个常量，表示ADC通道的数量。
+    dma_init_struct.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
+    // 这行代码设置外设地址不递增。每次DMA传输完成后，外设地址保持不变，这在读取同一外设地址的情况下非常有用，比如连续读取同一个ADC数据寄存器。
+    dma_init_struct.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
+    // 这行代码设置内存地址递增。这意味着每次DMA传输后，内存地址将递增，以便下一个数据存储在新的位置。
+    dma_init_struct.periph_memory_width = DMA_PERIPH_WIDTH_16BIT;
+    // 这行代码设置DMA传输的数据宽度。这里设置为16位，意味着每次传输16位（2字节）的数据。
+    dma_init_struct.circular_mode = DMA_CIRCULAR_MODE_ENABLE;
+    // 这行代码启用循环模式。在循环模式下，当DMA到达传输数量的末尾时，它会自动重置到起始位置，形成一个连续循环的传输过程，这对于持续的数据流非常有用。
+    dma_init_struct.direction = DMA_PERIPH_TO_MEMORY;
+    // 这行代码设置DMA的传输方向。这里设置为从外设到内存，意味着数据将从ADC寄存器读取，并存储到内存中。
+    dma_init_struct.priority = DMA_PRIORITY_HIGH;
+    // 这行代码设置DMA通道的优先级。在这种情况下，它被设置为高优先级，这意味着它将优先于其他较低优先级的DMA传输。
+
+    dma_single_data_mode_init(DMA1, DMA_CH0, &dma_init_struct);
+    dma_channel_subperipheral_select(DMA1, DMA_CH0, DMA_SUBPERI2);
+
+    // 使能DMA通道
+    dma_channel_enable(DMA1, DMA_CH0);
+}
+
+void ADC2_init_454(void)
+{
+    /* 配置PF6, PF7, PF8, PF9, PF10, 和 PF3 为模拟输入 */
+    gpio_mode_set(GPIOF, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_3);
+
+    adc_deinit();
+    adc_sync_mode_config(ADC_SYNC_MODE_INDEPENDENT);
+    adc_clock_config(ADC_ADCCK_HCLK_DIV5);
+    adc_resolution_config(ADC2, ADC_RESOLUTION_12B);
+
+    adc_special_function_config(ADC2, ADC_SCAN_MODE, ENABLE);
+    adc_special_function_config(ADC2, ADC_CONTINUOUS_MODE, ENABLE);
+
+    adc_data_alignment_config(ADC2, ADC_DATAALIGN_RIGHT);
+
+    /* ADC DMA function enable */
+    adc_dma_request_after_last_enable(ADC2);
+    adc_dma_mode_enable(ADC2);
+
+    adc_enable(ADC2);
+    adc_calibration_enable(ADC2); // 校准ADC
+
+    adc_external_trigger_config(ADC2, ADC_REGULAR_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
+
+    adc_channel_length_config(ADC2, ADC_REGULAR_CHANNEL, 6);
+    adc_regular_channel_config(ADC2, 0, ADC_CHANNEL_4, ADC_SAMPLETIME_15);//p4比例阀
+    adc_regular_channel_config(ADC2, 1, ADC_CHANNEL_5, ADC_SAMPLETIME_15);//P5电磁阀
+    adc_regular_channel_config(ADC2, 2, ADC_CHANNEL_6, ADC_SAMPLETIME_15);//P6电磁阀
+    adc_regular_channel_config(ADC2, 3, ADC_CHANNEL_7, ADC_SAMPLETIME_15);//PSE540
+    adc_regular_channel_config(ADC2, 4, ADC_CHANNEL_10, ADC_SAMPLETIME_15);//温度(备用)
+    adc_regular_channel_config(ADC2, 5, ADC_CHANNEL_3, ADC_SAMPLETIME_15);//辅助氧浓度传感器
+
+    adc_software_trigger_enable(ADC2, ADC_REGULAR_CHANNEL);
+}
+
+void PWM_init_454(void)
+{
+
+    // 设置PE0为输出模式
+    gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_0);
+    gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_0);
+    // 设置PE1为输出模式
+    gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_1);
+    gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
+    // 设置PE2为输出模式
+    gpio_mode_set(GPIOE, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_2);
+    gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
+
+    // 默认禁用EG27519
+    gpio_bit_set(GPIOE, GPIO_PIN_0);
+    gpio_bit_set(GPIOE, GPIO_PIN_1);
+    gpio_bit_set(GPIOE, GPIO_PIN_2);
+
+    //////////////////////////////////////////////////////////////////////////////
+    // PWM_OUT1  PC6
+    // TIMER2_CH0配置
+    //////////////////////////////////////////////////////////////////////////////
+    gpio_af_set(GPIOC, GPIO_AF_2, GPIO_PIN_6);
+    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_6);
+    gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
+    timer_oc_parameter_struct timer2_ocinitpara;
+    timer_parameter_struct timer2_initpara;
+
+    timer_deinit(TIMER2);
+
+    // 设置TIMER2的基础配置
+    timer2_initpara.prescaler = 9; // 根据需要调整
+    timer2_initpara.alignedmode = TIMER_COUNTER_EDGE;
+    timer2_initpara.counterdirection = TIMER_COUNTER_UP;
+    timer2_initpara.period = 999; // 根据需要调整，确定PWM频率
+    timer2_initpara.clockdivision = TIMER_CKDIV_DIV1;
+    timer_init(TIMER2, &timer2_initpara);
+
+    // 设置TIMER2_CH0的PWM模式
+    timer2_ocinitpara.outputstate = TIMER_CCX_ENABLE;          // 启用TIMER_CHANNEL
+    timer2_ocinitpara.outputnstate = TIMER_CCXN_DISABLE;       // 禁用TIMER_CHANNEL的互补输出
+    timer2_ocinitpara.ocpolarity = TIMER_OC_POLARITY_HIGH;     // 设置PWM极性为高
+    timer2_ocinitpara.ocnpolarity = TIMER_OCN_POLARITY_HIGH;   // 设置PWM互补输出极性为高
+    timer2_ocinitpara.ocidlestate = TIMER_OC_IDLE_STATE_LOW;   // 在空闲状态下，PWM输出为低
+    timer2_ocinitpara.ocnidlestate = TIMER_OCN_IDLE_STATE_LOW; // 在空闲状态下，PWM互补输出为低
+
+    timer_channel_output_config(TIMER2, TIMER_CH_0, &timer2_ocinitpara);
+    // 设置PWM模式
+    timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, 499); // 根据需要调整占空比
+    timer_channel_output_mode_config(TIMER2, TIMER_CH_0, TIMER_OC_MODE_PWM0);
+    timer_channel_output_shadow_config(TIMER2, TIMER_CH_0, TIMER_OC_SHADOW_DISABLE);
+    // 启动TIMER2
+    timer_auto_reload_shadow_enable(TIMER2);
+    timer_enable(TIMER2);
+
+    //////////////////////////////////////////////////////////////////////////////
+    // PWM_OUT2  PA6
+    // TIMER12_CH0配置
+    //////////////////////////////////////////////////////////////////////////////
+
+    // P5电磁阀,PWM_OUT_2,PA6:TIMER2的复用功能
+    gpio_af_set(GPIOA, GPIO_AF_9, GPIO_PIN_6);
+    gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_6);
+    gpio_output_options_set(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+
+    timer_oc_parameter_struct timer12_ocinitpara;
+    timer_parameter_struct timer12_initpara;
+
+    timer_deinit(TIMER12);
+
+    // 设置TIMER2的基础配置
+    timer12_initpara.prescaler = 9; // 根据需要调整
+    timer12_initpara.alignedmode = TIMER_COUNTER_EDGE;
+    timer12_initpara.counterdirection = TIMER_COUNTER_UP;
+    timer12_initpara.period = 999; // 根据需要调整，确定PWM频率
+    timer12_initpara.clockdivision = TIMER_CKDIV_DIV1;
+    timer_init(TIMER12, &timer12_initpara);
+
+    // 设置TIMER2_CH0的PWM模式
+    timer12_ocinitpara.outputstate = TIMER_CCX_ENABLE;          // 启用TIMER_CHANNEL
+    timer12_ocinitpara.outputnstate = TIMER_CCXN_DISABLE;       // 禁用TIMER_CHANNEL的互补输出
+    timer12_ocinitpara.ocpolarity = TIMER_OC_POLARITY_HIGH;     // 设置PWM极性为高
+    timer12_ocinitpara.ocnpolarity = TIMER_OCN_POLARITY_HIGH;   // 设置PWM互补输出极性为高
+    timer12_ocinitpara.ocidlestate = TIMER_OC_IDLE_STATE_LOW;   // 在空闲状态下，PWM输出为低
+    timer12_ocinitpara.ocnidlestate = TIMER_OCN_IDLE_STATE_LOW; // 在空闲状态下，PWM互补输出为低
+
+    timer_channel_output_config(TIMER12, TIMER_CH_0, &timer12_ocinitpara);
+    // 设置PWM模式
+    timer_channel_output_pulse_value_config(TIMER12, TIMER_CH_0, 499); // 根据需要调整占空比
+    timer_channel_output_mode_config(TIMER12, TIMER_CH_0, TIMER_OC_MODE_PWM0);
+    timer_channel_output_shadow_config(TIMER12, TIMER_CH_0, TIMER_OC_SHADOW_DISABLE);
+    // 启动TIMER2
+    timer_auto_reload_shadow_enable(TIMER12);
+    timer_enable(TIMER12);
+
+    //////////////////////////////////////////////////////////////////////////////
+    // PWM_OUT3  PD12
+    // TIMER3_CH0配置
+    //////////////////////////////////////////////////////////////////////////////
+
+    // P6电磁阀,PWM_OUT_3,PD12:TIMER3的复用功能
+    gpio_af_set(GPIOD, GPIO_AF_2, GPIO_PIN_12);
+    gpio_mode_set(GPIOD, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_12);
+    gpio_output_options_set(GPIOD, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_12);
+
+    timer_oc_parameter_struct timer3_ocinitpara;
+    timer_parameter_struct timer3_initpara;
+
+    timer_deinit(TIMER3);
+
+    // 设置TIMER3的基础配置
+    timer3_initpara.prescaler = 9; // 根据需要调整
+    timer3_initpara.alignedmode = TIMER_COUNTER_EDGE;
+    timer3_initpara.counterdirection = TIMER_COUNTER_UP;
+    timer3_initpara.period = 999; // 根据需要调整，确定PWM频率
+    timer3_initpara.clockdivision = TIMER_CKDIV_DIV1;
+    timer_init(TIMER3, &timer3_initpara);
+
+    // 设置TIMER3_CH0的PWM模式
+    timer3_ocinitpara.outputstate = TIMER_CCX_ENABLE;          // 启用TIMER_CHANNEL
+    timer3_ocinitpara.outputnstate = TIMER_CCXN_DISABLE;       // 禁用TIMER_CHANNEL的互补输出
+    timer3_ocinitpara.ocpolarity = TIMER_OC_POLARITY_HIGH;     // 设置PWM极性为高
+    timer3_ocinitpara.ocnpolarity = TIMER_OCN_POLARITY_HIGH;   // 设置PWM互补输出极性为高
+    timer3_ocinitpara.ocidlestate = TIMER_OC_IDLE_STATE_LOW;   // 在空闲状态下，PWM输出为低
+    timer3_ocinitpara.ocnidlestate = TIMER_OCN_IDLE_STATE_LOW; // 在空闲状态下，PWM互补输出为低
+
+    timer_channel_output_config(TIMER3, TIMER_CH_0, &timer3_ocinitpara);
+    // 设置PWM模式
+    timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, 499); // 根据需要调整占空比
+    timer_channel_output_mode_config(TIMER3, TIMER_CH_0, TIMER_OC_MODE_PWM0);
+    timer_channel_output_shadow_config(TIMER3, TIMER_CH_0, TIMER_OC_SHADOW_DISABLE);
+    // 启动TIMER3
+    timer_auto_reload_shadow_enable(TIMER3);
+    timer_enable(TIMER3);
+
+    //
+    //
+    //
+    // PWM_IN-->TIMER4
+    //  设置PA0为复用模式,复用功能为TIMER4_CH0
+    gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_0);
+    gpio_output_options_set(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_0);
+    gpio_af_set(GPIOA, GPIO_AF_2, GPIO_PIN_0);
+    // 设置PA1为复用模式,复用功能为TIMER4_CH1
+    gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_1);
+    gpio_output_options_set(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_1);
+    gpio_af_set(GPIOA, GPIO_AF_2, GPIO_PIN_1);
+    // 设置PA2为复用模式,复用功能为TIMER4_CH2
+    gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_2);
+    gpio_output_options_set(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_2);
+    gpio_af_set(GPIOA, GPIO_AF_2, GPIO_PIN_2);
+
+    timer_ic_parameter_struct timer4_icinitpara;
+    timer_parameter_struct timer4_initpara;
+
+    // 开启TIMER4时钟
+    rcu_periph_clock_enable(RCU_TIMER4);
+
+    // 设置TIMER4的基础配置
+    timer_deinit(TIMER4);
+    timer4_initpara.prescaler = 9; // 根据需要调整
+    timer4_initpara.alignedmode = TIMER_COUNTER_EDGE;
+    timer4_initpara.counterdirection = TIMER_COUNTER_UP;
+    timer4_initpara.period = 999; // 根据需要调整
+    timer4_initpara.clockdivision = TIMER_CKDIV_DIV1;
+    timer_init(TIMER4, &timer4_initpara);
+
+    // 设置TIMER4_CH1为输入捕获模式
+    timer4_icinitpara.icpolarity = TIMER_IC_POLARITY_RISING;     // 上升沿捕获
+    timer4_icinitpara.icselection = TIMER_IC_SELECTION_DIRECTTI; // 映射到TI1上
+    timer4_icinitpara.icprescaler = TIMER_IC_PSC_DIV1;           // 不分频
+    timer4_icinitpara.icfilter = 0;                              // 不滤波
+    timer_input_capture_config(TIMER4, TIMER_CH_1, &timer4_icinitpara);
+
+    // 启用TIMER4
+    timer_enable(TIMER4);
 }
 
 /*!
@@ -1013,9 +1249,6 @@ void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
     *flow_data = (float)actual_flow;
 }
 
-// PB12: SPI1_nCS2
-// PB15: SPI1_nCS1
-
 FlagStatus drdy1_status(void)
 {
     return gpio_input_bit_get(GPIOG, GPIO_PIN_1);
@@ -1150,9 +1383,18 @@ uint16_t PSE540_value_read(void)
     return adc_regular_data_read(ADC2);
 }
 
-
-
-
+void P4_PWM_set(uint32_t pulse)
+{
+    timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, pulse - 1); // 根据需要调整占空比
+}
+void P5_PWM_set(uint32_t pulse)
+{
+    timer_channel_output_pulse_value_config(TIMER12, TIMER_CH_0, pulse - 1); // 根据需要调整占空比
+}
+void P6_PWM_set(uint32_t pulse)
+{
+    timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, pulse - 1); // 根据需要调整占空比
+}
 
 //
 //

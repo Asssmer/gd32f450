@@ -1,3 +1,6 @@
+#ifndef _SOFTWARE_WANGJIAJUN
+#define _FTWARE_WANGJIAJUN
+
 #define GD32F450
 
 #include <stdint.h>
@@ -31,6 +34,9 @@
 #define SPI_P7 GPIO_PIN_15
 #define SPI_P9 GPIO_PIN_12
 
+#define ADC_CHANNEL_COUNT 6
+extern volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
+
 // 初始化函数
 void init_454(void);
 
@@ -43,6 +49,10 @@ void USART0_init_454(void);
 void I2C_init_454(void);
 void SPI1_init_454(void);
 void PSE540_init_454(void);
+void ADC2_DMA_init_454(void);
+void ADC2_init_454(void);
+void PWM_init_454(void);
+
 
 // 工具函数
 void ms_delay_454(uint32_t ms);
@@ -94,3 +104,11 @@ uint16_t PSE540_value_read(void);
 float adc_to_voltage(uint16_t adc_value);
 
 // PWM
+void P4_PWM_set(uint32_t pulse);
+void P5_PWM_set(uint32_t pulse);
+void P6_PWM_set(uint32_t pulse);
+
+
+
+
+#endif

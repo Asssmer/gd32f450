@@ -33,6 +33,7 @@
         "bit": "c",
         "math.h": "c",
         "corecrt_math.h": "c",
-        "xmemory": "c"
+        "xmemory": "c",
+        "gd32f4xx_adc.h": "c"
     }
 }
