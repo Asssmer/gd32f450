@@ -14,6 +14,7 @@ void init_454(void)
     NVIC_init_454();
     I2C_init_454();
     LED_init_454();
+    YDP_init_454();
     TIMER_init_454();
     USART0_init_454();
     USART1_init_454();
@@ -25,6 +26,8 @@ void init_454(void)
     PWM_init_454();
     ADC2_DMA_init_454();
     ADC2_init_454();
+
+    ms_delay_454(2);
 
     /* 配置PC9为CKOUT1 */
     // gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
@@ -90,6 +93,14 @@ void LED_init_454(void)
     gpio_bit_set(GPIOG, GPIO_PIN_6);
     gpio_bit_set(GPIOG, GPIO_PIN_7);
     gpio_bit_set(GPIOG, GPIO_PIN_8);
+}
+
+void YDP_init_454(void) {
+    // 设置PB14为输出模式
+    gpio_mode_set(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_14);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_14);
+    // 初始化时可以选择关闭压电阀片
+    gpio_bit_reset(GPIOB, GPIO_PIN_14);
 }
 
 void TIMER_init_454(void)
@@ -1395,6 +1406,17 @@ void P6_PWM_set(uint32_t pulse)
 {
     timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, pulse - 1); // 根据需要调整占空比
 }
+
+//压电阀片
+void YDP_control(FlagStatus on) {
+    if (on) {
+        gpio_bit_set(GPIOB, GPIO_PIN_14);  // 打开压电阀片
+    } else {
+        gpio_bit_reset(GPIOB, GPIO_PIN_14);  // 关闭压电阀片
+    }
+    ms_delay_454(2);
+}
+
 
 //
 //

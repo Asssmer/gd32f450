@@ -43,6 +43,7 @@ void init_454(void);
 void RCU_init_454(void);
 void NVIC_init_454(void);
 void LED_init_454(void);
+void YDP_init_454(void);
 void TIMER_init_454(void);
 void USART1_init_454(void);
 void USART0_init_454(void);
@@ -52,6 +53,7 @@ void PSE540_init_454(void);
 void ADC2_DMA_init_454(void);
 void ADC2_init_454(void);
 void PWM_init_454(void);
+
 
 
 // ¹¤¾ßº¯Êý

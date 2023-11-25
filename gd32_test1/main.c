@@ -2,7 +2,6 @@
 
 // SystemCoreClock
 
-
 int main(void)
 {
         init_454();
@@ -22,8 +21,11 @@ int main(void)
 
         uint16_t PSE540_value = 0;
 
+        P4_PWM_set(1000);
         P5_PWM_set(1000);
         P6_PWM_set(1000);
+        YDP_control(SET);
+
         extern volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
         while (1)
         {
@@ -33,9 +35,9 @@ int main(void)
                 for (int channel = 0; channel < 6; ++channel)
                 {
                         // adc_values[channel] = adc_regular_data_read(ADC2);
-                        log_454(floatToStr(adc_to_voltage(adc_values_454[channel]),2));
+                        log_454(floatToStr(adc_to_voltage(adc_values_454[channel]), 2));
                         log_454("\n");
-                         ms_delay_454(500);
+                        ms_delay_454(500);
                 }
 
                 // uint16_t PSE540_value = PSE540_value_read();
@@ -44,8 +46,6 @@ int main(void)
                 // float PSE540_value_1=(PSE540_value/4095)*3.3;
                 // log_454("\n PSE540_value_1::");
                 // log_454(floatToStr(adc_to_voltage(PSE540_value_1), 2));
-
-
 
                 // P7_temp = MAX31865_TempGet_454(SPI_P7);
                 // log_454("\n P7::!!\n");
@@ -72,10 +72,12 @@ int main(void)
                 // PWM_EN_enable(GPIO_PIN_1);
 
                 // timer_channel_capture_value_register_read(TIMER4, TIMER_CH_1);
-
+                // YDP_control(SET);
                 ms_delay_454(1000);
+                // YDP_control(RESET);
                 // PWM_EN_disable(GPIO_PIN_1);
                 log_454("\n end!!\n");
+                // ms_delay_454(1000);
                 // break;
         }
         return 0;
