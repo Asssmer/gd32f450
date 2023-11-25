@@ -5,8 +5,9 @@
 */
 char strOutput_454[MAX_STR_SIZE]; // 存储转换后的字符串
 volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
+volatile uint8_t MOTOR_received_frame[MOTOR_FRAME_SIZE];
 
-
+volatile MotorStatus motor_status;
 
 void init_454(void)
 {
@@ -18,6 +19,7 @@ void init_454(void)
     TIMER_init_454();
     USART0_init_454();
     USART1_init_454();
+    USART2_init_454();
     SPI1_init_454();
     MAX31865_HWInit(GPIO_PIN_15);
     MAX31865_HWInit(GPIO_PIN_12);
@@ -27,7 +29,7 @@ void init_454(void)
     ADC2_DMA_init_454();
     ADC2_init_454();
 
-    ms_delay_454(2);
+    ms_delay_454(2); //?初始化后的延时待定
 
     /* 配置PC9为CKOUT1 */
     // gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
@@ -58,6 +60,7 @@ void RCU_init_454(void)
     rcu_periph_clock_enable(RCU_TIMER6);
     rcu_periph_clock_enable(RCU_USART0);
     rcu_periph_clock_enable(RCU_USART1);
+    rcu_periph_clock_enable(RCU_USART2);
     rcu_periph_clock_enable(RCU_DMA0);
     rcu_periph_clock_enable(RCU_DMA1);
     rcu_periph_clock_enable(RCU_I2C0);
@@ -72,7 +75,12 @@ void NVIC_init_454(void)
     nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
     // 数字越小，优先级越高
     nvic_irq_enable(DMA0_Channel6_IRQn, 0, 7);
-    nvic_irq_enable(DMA1_Channel7_IRQn, 0, 6);
+
+    nvic_irq_enable(DMA1_Channel7_IRQn, 0, 6); // USART0_TX
+    nvic_irq_enable(DMA1_Channel2_IRQn, 0, 5); // USART0_RX
+
+    nvic_irq_enable(DMA0_Channel3_IRQn, 0, 2); // USART2_TX
+    nvic_irq_enable(DMA0_Channel1_IRQn, 0, 1); // USART2_RX
 
     // nvic_irq_enable(I2C0_EV_IRQn, 0, 3);
     // nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
@@ -95,7 +103,8 @@ void LED_init_454(void)
     gpio_bit_set(GPIOG, GPIO_PIN_8);
 }
 
-void YDP_init_454(void) {
+void YDP_init_454(void)
+{
     // 设置PB14为输出模式
     gpio_mode_set(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_14);
     gpio_output_options_set(GPIOB, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_14);
@@ -166,7 +175,7 @@ void USART1_init_454(void)
 
 void USART0_init_454(void)
 {
-    /* Configure USART1 */
+    /* Configure USART0 */
     usart_deinit(USART0);
     usart_disable(USART0);
     usart_word_length_set(USART0, USART_WL_8BIT);
@@ -181,7 +190,7 @@ void USART0_init_454(void)
     usart_dma_receive_config(USART0, USART_DENR_ENABLE);
     usart_dma_transmit_config(USART0, USART_DENT_ENABLE);
 
-    /* Configure USART1 TX DMA */
+    /* Configure USART0_TX DMA */
     dma_deinit(DMA1, DMA_CH7);
     dma_multi_data_parameter_struct dma_init_struct;
     dma_multi_data_para_struct_init(&dma_init_struct);
@@ -196,18 +205,101 @@ void USART0_init_454(void)
     dma_channel_subperipheral_select(DMA1, DMA_CH7, DMA_SUBPERI4);
     dma_interrupt_enable(DMA1, DMA_CH7, DMA_CHXCTL_FTFIE);
 
-    // Configure USART1 TX (PA9) as alternate function push-pull
+    /* Configure USART0_RX DMA */
+    dma_deinit(DMA1, DMA_CH2); // 清除DMA通道2的配置
+    dma_multi_data_parameter_struct dma_init_struct_RX;
+    dma_multi_data_para_struct_init(&dma_init_struct_RX);
+    dma_init_struct_RX.periph_addr = (uint32_t)&USART_DATA(USART0);
+    dma_init_struct_RX.periph_width = DMA_PERIPH_WIDTH_8BIT;
+    dma_init_struct_RX.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
+    dma_init_struct_RX.memory_width = DMA_MEMORY_WIDTH_8BIT;
+    dma_init_struct_RX.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
+    dma_init_struct_RX.direction = DMA_PERIPH_TO_MEMORY;
+    dma_init_struct_RX.priority = DMA_PRIORITY_LOW;
+    dma_multi_data_mode_init(DMA1, DMA_CH2, &dma_init_struct_RX);
+    dma_channel_subperipheral_select(DMA1, DMA_CH2, DMA_SUBPERI4); // 选择子外设4
+    dma_interrupt_enable(DMA1, DMA_CH2, DMA_CHXCTL_FTFIE);
+
+    // Configure USART0_TX (PA9) as alternate function push-pull
     gpio_af_set(GPIOA, GPIO_AF_7, GPIO_PIN_9);
     gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_9);
     gpio_output_options_set(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
 
-    // Configure USART1 RX (PA10) as floating input
+    // Configure USART0_RX (PA10) as floating input
     gpio_af_set(GPIOA, GPIO_AF_7, GPIO_PIN_10);
     gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_10);
     gpio_output_options_set(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_10);
 
     usart_prescaler_config(USART0, 1U);
     usart_enable(USART0);
+}
+
+void USART2_init_454(void)
+{
+
+    /* Configure USART2 */
+    usart_deinit(USART2);
+    usart_disable(USART2);
+    usart_word_length_set(USART2, USART_WL_8BIT);
+    usart_stop_bit_set(USART2, USART_STB_1BIT);
+    usart_baudrate_set(USART2, 250000U);
+    usart_parity_config(USART2, USART_PM_NONE);
+
+    usart_hardware_flow_rts_config(USART2, USART_RTS_DISABLE);
+    usart_hardware_flow_cts_config(USART2, USART_CTS_DISABLE);
+    usart_receive_config(USART2, USART_RECEIVE_ENABLE);
+    usart_transmit_config(USART2, USART_TRANSMIT_ENABLE);
+    usart_dma_receive_config(USART2, USART_DENR_ENABLE);
+    usart_dma_transmit_config(USART2, USART_DENT_ENABLE);
+
+    /* Configure USART2_TX DMA */
+    dma_deinit(DMA0, DMA_CH3);
+    dma_multi_data_parameter_struct dma_init_struct;
+    dma_multi_data_para_struct_init(&dma_init_struct);
+    dma_init_struct.periph_addr = (uint32_t)&USART_DATA(USART2);
+    dma_init_struct.periph_width = DMA_PERIPH_WIDTH_8BIT;
+    dma_init_struct.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
+    dma_init_struct.memory_width = DMA_MEMORY_WIDTH_8BIT;
+    dma_init_struct.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
+    dma_init_struct.direction = DMA_MEMORY_TO_PERIPH;
+    dma_init_struct.priority = DMA_PRIORITY_ULTRA_HIGH;
+    dma_multi_data_mode_init(DMA0, DMA_CH3, &dma_init_struct);
+
+    dma_channel_subperipheral_select(DMA0, DMA_CH3, DMA_SUBPERI4);
+    dma_interrupt_enable(DMA0, DMA_CH3, DMA_CHXCTL_FTFIE);
+
+    /* Configure USART2_RX DMA */
+    dma_channel_disable(DMA0, DMA_CH1);
+    // 初始化DMA
+    dma_deinit(DMA0, DMA_CH1);
+    dma_single_data_parameter_struct dma_init_struct_RX;
+    dma_single_data_para_struct_init(&dma_init_struct_RX);
+    dma_init_struct_RX.periph_addr = (uint32_t)&USART_DATA(USART0);
+    dma_init_struct_RX.memory0_addr = (uint32_t)MOTOR_received_frame;
+    dma_init_struct_RX.number = MOTOR_FRAME_SIZE;
+    dma_init_struct_RX.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
+    dma_init_struct_RX.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
+    dma_init_struct_RX.periph_memory_width = DMA_MEMORY_WIDTH_8BIT;
+    dma_init_struct_RX.circular_mode = DMA_CIRCULAR_MODE_ENABLE;
+    dma_init_struct_RX.direction = DMA_PERIPH_TO_MEMORY;
+    dma_init_struct_RX.priority = DMA_PRIORITY_HIGH;
+
+    dma_single_data_mode_init(DMA0, DMA_CH1, &dma_init_struct_RX);
+    dma_channel_subperipheral_select(DMA0, DMA_CH1, DMA_SUBPERI4);
+    dma_channel_enable(DMA0, DMA_CH1);
+
+    // Configure USART2 TX (PD8) as alternate function push-pull
+    gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_8);
+    gpio_mode_set(GPIOD, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_8);
+    gpio_output_options_set(GPIOD, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_8);
+
+    // Configure USART2 RX (PD9) as floating input
+    gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_9);
+    gpio_mode_set(GPIOD, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_9);
+    gpio_output_options_set(GPIOD, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
+
+    usart_prescaler_config(USART2, 1U);
+    usart_enable(USART2);
 }
 
 void I2C_init_454(void)
@@ -452,12 +544,12 @@ void ADC2_init_454(void)
     adc_external_trigger_config(ADC2, ADC_REGULAR_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
 
     adc_channel_length_config(ADC2, ADC_REGULAR_CHANNEL, 6);
-    adc_regular_channel_config(ADC2, 0, ADC_CHANNEL_4, ADC_SAMPLETIME_15);//p4比例阀
-    adc_regular_channel_config(ADC2, 1, ADC_CHANNEL_5, ADC_SAMPLETIME_15);//P5电磁阀
-    adc_regular_channel_config(ADC2, 2, ADC_CHANNEL_6, ADC_SAMPLETIME_15);//P6电磁阀
-    adc_regular_channel_config(ADC2, 3, ADC_CHANNEL_7, ADC_SAMPLETIME_15);//PSE540
-    adc_regular_channel_config(ADC2, 4, ADC_CHANNEL_10, ADC_SAMPLETIME_15);//温度(备用)
-    adc_regular_channel_config(ADC2, 5, ADC_CHANNEL_3, ADC_SAMPLETIME_15);//辅助氧浓度传感器
+    adc_regular_channel_config(ADC2, 0, ADC_CHANNEL_4, ADC_SAMPLETIME_15);  // p4比例阀
+    adc_regular_channel_config(ADC2, 1, ADC_CHANNEL_5, ADC_SAMPLETIME_15);  // P5电磁阀
+    adc_regular_channel_config(ADC2, 2, ADC_CHANNEL_6, ADC_SAMPLETIME_15);  // P6电磁阀
+    adc_regular_channel_config(ADC2, 3, ADC_CHANNEL_7, ADC_SAMPLETIME_15);  // PSE540
+    adc_regular_channel_config(ADC2, 4, ADC_CHANNEL_8, ADC_SAMPLETIME_15); // 温度(备用)
+    adc_regular_channel_config(ADC2, 5, ADC_CHANNEL_9, ADC_SAMPLETIME_15);  // 辅助氧浓度传感器
 
     adc_software_trigger_enable(ADC2, ADC_REGULAR_CHANNEL);
 }
@@ -731,11 +823,20 @@ uint8_t usart0_send_454(uint8_t *string, uint16_t count_size)
     dma_channel_enable(DMA1, DMA_CH7);
     return 0;
 }
-uint8_t usart0_receive_454(void)
+
+uint8_t usart0_receive_454(uint8_t *buffer, uint16_t buffer_size)
 {
-    while (usart_flag_get(USART1, USART_FLAG_RBNE) == RESET)
-        ;
-    return usart_data_receive(USART1);
+    while (DMA_CHCTL(DMA1, DMA_CH2) & DMA_CHXCTL_CHEN)
+    {
+        // 等待DMA通道不忙
+    }
+    dma_memory_address_config(DMA1, DMA_CH2, DMA_MEMORY_0, (uint32_t)buffer);
+    dma_transfer_number_config(DMA1, DMA_CH2, buffer_size);
+    dma_channel_enable(DMA1, DMA_CH2);
+
+    // 可以在这里加入超时逻辑以避免死循环
+
+    return 0; // 返回0表示成功
 }
 
 uint8_t usart1_send_454(uint8_t *string, uint16_t count_size)
@@ -756,6 +857,23 @@ uint8_t usart1_receive_454(void)
     while (usart_flag_get(USART1, USART_FLAG_RBNE) == RESET)
         ;
     return usart_data_receive(USART1);
+}
+
+uint8_t usart2_send_454(uint8_t *string, uint16_t count_size)
+{
+    while (DMA_CHCTL(DMA0, DMA_CH3) & DMA_CHXCTL_CHEN)
+    {
+    }
+    while (RESET == usart_flag_get(USART2, USART_FLAG_TC))
+    {
+    }
+    dma_memory_address_config(DMA0, DMA_CH3, DMA_MEMORY_0, string);
+    dma_transfer_number_config(DMA0, DMA_CH3, count_size);
+    dma_channel_enable(DMA0, DMA_CH3);
+    return 0;
+}
+uint8_t usart2_receive_454(void)
+{
 }
 
 char *intToStr(int num)
@@ -1396,27 +1514,81 @@ uint16_t PSE540_value_read(void)
 
 void P4_PWM_set(uint32_t pulse)
 {
-    timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, pulse - 1); // 根据需要调整占空比
+    if (pulse == 0)
+    {
+        // 如果pulse为0，将脉冲宽度设置为0，占空比为0
+        timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, 0);
+    }
+    else
+    {
+        // 对于非零pulse，确保至少有一个脉冲
+        timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, (pulse > 1) ? (pulse - 1) : 1);
+    }
 }
 void P5_PWM_set(uint32_t pulse)
 {
-    timer_channel_output_pulse_value_config(TIMER12, TIMER_CH_0, pulse - 1); // 根据需要调整占空比
+    if (pulse == 0)
+    {
+        // 如果pulse为0，将脉冲宽度设置为0，占空比为0
+        timer_channel_output_pulse_value_config(TIMER12, TIMER_CH_0, 0);
+    }
+    else
+    {
+        // 对于非零pulse，确保至少有一个脉冲
+        timer_channel_output_pulse_value_config(TIMER12, TIMER_CH_0, (pulse > 1) ? (pulse - 1) : 1);
+    }
 }
 void P6_PWM_set(uint32_t pulse)
 {
-    timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, pulse - 1); // 根据需要调整占空比
+    if (pulse == 0)
+    {
+        // 如果pulse为0，将脉冲宽度设置为0，占空比为0
+        timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, 0);
+    }
+    else
+    {
+        // 对于非零pulse，确保至少有一个脉冲
+        timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, (pulse > 1) ? (pulse - 1) : 1);
+    }
 }
 
-//压电阀片
-void YDP_control(FlagStatus on) {
-    if (on) {
-        gpio_bit_set(GPIOB, GPIO_PIN_14);  // 打开压电阀片
-    } else {
-        gpio_bit_reset(GPIOB, GPIO_PIN_14);  // 关闭压电阀片
+// 压电阀片
+void YDP_control(FlagStatus on)
+{
+    if (on)
+    {
+        gpio_bit_set(GPIOB, GPIO_PIN_14); // 打开压电阀片
+    }
+    else
+    {
+        gpio_bit_reset(GPIOB, GPIO_PIN_14); // 关闭压电阀片
     }
     ms_delay_454(2);
 }
 
+// 电机
+void send_motor_control_frame(uint16_t speed)
+{
+    uint8_t frame[4];
+    uint8_t check_sum;
+
+    frame[0] = 0x80;                // 帧头
+    frame[1] = speed & 0xFF;        // 转速指令低8位
+    frame[2] = (speed >> 8) & 0xFF; // 转速指令高8位
+
+    // 计算校验和
+    check_sum = frame[1] + frame[2]; // 累加和低8位
+    frame[3] = check_sum;            // 校验
+
+    // 通过 USART 发送数据
+    usart2_send_454(frame, 4);
+    // for (int i = 0; i < sizeof(frame); ++i)
+    // {
+    //     usart_data_transmit(USART2, frame[i]);
+    //     while (usart_flag_get(USART2, USART_FLAG_TBE) == RESET)
+    //         ;
+    // }
+}
 
 //
 //
@@ -1453,4 +1625,67 @@ void DMA1_Channel7_IRQHandler(void)
         dma_interrupt_flag_clear(DMA1, DMA_CH7, DMA_INT_FLAG_FTF);
         dma_channel_disable(DMA1, DMA_CH7);
     }
+}
+void DMA1_Channel2_IRQHandler(void)
+{
+    if (dma_interrupt_flag_get(DMA1, DMA_CH2, DMA_INT_FLAG_FTF) != RESET)
+    {
+        dma_interrupt_flag_clear(DMA1, DMA_CH2, DMA_INT_FLAG_FTF);
+        dma_channel_disable(DMA1, DMA_CH2);
+    }
+}
+// USART2_TX 电机发送数据帧
+void DMA0_Channel3_IRQHandler(void)
+{
+    if (dma_interrupt_flag_get(DMA0, DMA_CH3, DMA_INT_FLAG_FTF) != RESET)
+    {
+        dma_interrupt_flag_clear(DMA0, DMA_CH3, DMA_INT_FLAG_FTF);
+        dma_channel_disable(DMA0, DMA_CH3);
+    }
+}
+// USART2_RX 电机接收数据帧处理
+void DMA0_Channel1_IRQHandler(void)
+{
+    if (dma_interrupt_flag_get(DMA0, DMA_CH1, DMA_INT_FLAG_FTF) != RESET)
+    {
+        // // 验证帧头
+        // if (MOTOR_received_frame[0] != 0x90)
+        // {
+        //     // 错误的帧头，可以在此处处理错误
+        //     return;
+        // }
+
+        // // 计算校验和
+        // uint8_t calculated_checksum = 0;
+        // for (int i = 1; i < MOTOR_FRAME_SIZE - 1; i++)
+        // {
+        //     calculated_checksum += MOTOR_received_frame[i];
+        // }
+        // // 验证校验和
+        // if (calculated_checksum != MOTOR_received_frame[MOTOR_FRAME_SIZE - 1])
+        // {
+        //     // 校验和不匹配，可以在此处处理错误
+        //     return;
+        // }
+        // 解析数据
+        motor_status.frame_header = MOTOR_received_frame[0];
+        motor_status.current_speed = (uint16_t)MOTOR_received_frame[2] << 8 | MOTOR_received_frame[1];
+        motor_status.motor_temperature = (int8_t)MOTOR_received_frame[3];
+        motor_status.fault_alarm = MOTOR_received_frame[4];
+        motor_status.checksum = MOTOR_received_frame[5];
+
+        // 计算校验和
+        uint8_t calculated_checksum = 0;
+        for (int i = 1; i < MOTOR_FRAME_SIZE - 1; i++)
+        {
+            calculated_checksum += MOTOR_received_frame[i];
+        }
+        // 验证校验和
+        motor_status.checksum_valid = (calculated_checksum == motor_status.checksum);
+
+        // 在此处处理解析的数据
+        // 例如：更新状态、显示信息、执行控制逻辑等
+    }
+    dma_interrupt_flag_clear(DMA0, DMA_CH1, DMA_INT_FLAG_FTF);
+    // dma_channel_disable(DMA0, DMA_CH1);
 }

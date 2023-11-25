@@ -5,6 +5,7 @@
 int main(void)
 {
         init_454();
+        char buff[256]={0};
 
         float i2c0_fTemp = 0;
         float i2c0_fPress = 0;
@@ -27,10 +28,16 @@ int main(void)
         YDP_control(SET);
 
         extern volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
+        extern volatile uint8_t MOTOR_received_frame[MOTOR_FRAME_SIZE];
+        extern volatile MotorStatus motor_status;
+        log_454("\n start!!\n");
+        ms_delay_454(2000);
+        send_motor_control_frame(20000);
+        // gpio_bit_toggle(GPIOG, GPIO_PIN_7);
         while (1)
         {
-                log_454("\n start!!\n");
-                gpio_bit_toggle(GPIOG, GPIO_PIN_7);
+                // usart0_receive_454(buff,10);
+                // usart0_send_454(buff,10);
 
                 for (int channel = 0; channel < 6; ++channel)
                 {
@@ -73,12 +80,12 @@ int main(void)
 
                 // timer_channel_capture_value_register_read(TIMER4, TIMER_CH_1);
                 // YDP_control(SET);
-                ms_delay_454(1000);
                 // YDP_control(RESET);
                 // PWM_EN_disable(GPIO_PIN_1);
-                log_454("\n end!!\n");
                 // ms_delay_454(1000);
                 // break;
+        ms_delay_454(1000);
+        log_454("\n end!!\n");
         }
         return 0;
 }
