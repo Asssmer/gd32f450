@@ -24,7 +24,6 @@ void init_454(void)
     MAX31865_HWInit(GPIO_PIN_15);
     MAX31865_HWInit(GPIO_PIN_12);
 
-    // PSE540_init_454();
     PWM_init_454();
     ADC2_DMA_init_454();
     ADC2_init_454();
@@ -98,9 +97,9 @@ void LED_init_454(void)
     gpio_mode_set(GPIOG, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO_PIN_8);
     gpio_output_options_set(GPIOG, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_8);
 
-    gpio_bit_set(GPIOG, GPIO_PIN_6);
-    gpio_bit_set(GPIOG, GPIO_PIN_7);
-    gpio_bit_set(GPIOG, GPIO_PIN_8);
+    gpio_bit_reset(GPIOG, GPIO_PIN_6);
+    gpio_bit_reset(GPIOG, GPIO_PIN_7);
+    gpio_bit_reset(GPIOG, GPIO_PIN_8);
 }
 
 void YDP_init_454(void)
@@ -242,6 +241,7 @@ void USART2_init_454(void)
     usart_disable(USART2);
     usart_word_length_set(USART2, USART_WL_8BIT);
     usart_stop_bit_set(USART2, USART_STB_1BIT);
+    // usart_baudrate_set(USART2, 115200U);
     usart_baudrate_set(USART2, 250000U);
     usart_parity_config(USART2, USART_PM_NONE);
 
@@ -254,17 +254,17 @@ void USART2_init_454(void)
 
     /* Configure USART2_TX DMA */
     dma_deinit(DMA0, DMA_CH3);
-    dma_multi_data_parameter_struct dma_init_struct;
-    dma_multi_data_para_struct_init(&dma_init_struct);
-    dma_init_struct.periph_addr = (uint32_t)&USART_DATA(USART2);
-    dma_init_struct.periph_width = DMA_PERIPH_WIDTH_8BIT;
-    dma_init_struct.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
-    dma_init_struct.memory_width = DMA_MEMORY_WIDTH_8BIT;
-    dma_init_struct.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
-    dma_init_struct.direction = DMA_MEMORY_TO_PERIPH;
-    dma_init_struct.priority = DMA_PRIORITY_ULTRA_HIGH;
-    dma_multi_data_mode_init(DMA0, DMA_CH3, &dma_init_struct);
+    dma_single_data_parameter_struct dma_init_struct_TX;
+    dma_single_data_para_struct_init(&dma_init_struct_TX);
 
+    dma_init_struct_TX.periph_addr = (uint32_t)&USART_DATA(USART2);
+    dma_init_struct_TX.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
+    dma_init_struct_TX.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
+    dma_init_struct_TX.periph_memory_width = DMA_MEMORY_WIDTH_8BIT;
+    dma_init_struct_TX.direction = DMA_MEMORY_TO_PERIPH;
+    dma_init_struct_TX.priority = DMA_PRIORITY_HIGH;
+
+    dma_single_data_mode_init(DMA0, DMA_CH3, &dma_init_struct_TX);
     dma_channel_subperipheral_select(DMA0, DMA_CH3, DMA_SUBPERI4);
     dma_interrupt_enable(DMA0, DMA_CH3, DMA_CHXCTL_FTFIE);
 
@@ -274,7 +274,8 @@ void USART2_init_454(void)
     dma_deinit(DMA0, DMA_CH1);
     dma_single_data_parameter_struct dma_init_struct_RX;
     dma_single_data_para_struct_init(&dma_init_struct_RX);
-    dma_init_struct_RX.periph_addr = (uint32_t)&USART_DATA(USART0);
+
+    dma_init_struct_RX.periph_addr = (uint32_t)&USART_DATA(USART2);
     dma_init_struct_RX.memory0_addr = (uint32_t)MOTOR_received_frame;
     dma_init_struct_RX.number = MOTOR_FRAME_SIZE;
     dma_init_struct_RX.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
@@ -286,6 +287,8 @@ void USART2_init_454(void)
 
     dma_single_data_mode_init(DMA0, DMA_CH1, &dma_init_struct_RX);
     dma_channel_subperipheral_select(DMA0, DMA_CH1, DMA_SUBPERI4);
+    dma_interrupt_enable(DMA0, DMA_CH1, DMA_CHXCTL_FTFIE);
+
     dma_channel_enable(DMA0, DMA_CH1);
 
     // Configure USART2 TX (PD8) as alternate function push-pull
@@ -466,23 +469,6 @@ void SPI1_init_454(void)
     spi_enable(SPI1);
 }
 
-void PSE540_init_454(void)
-{
-    /* 将PF9配置为模拟输入 */
-    gpio_mode_set(GPIOF, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO_PIN_9);
-    adc_deinit();
-    adc_clock_config(ADC_ADCCK_HCLK_DIV5);
-    adc_resolution_config(ADC2, ADC_RESOLUTION_12B);
-    adc_enable(ADC2);
-    /* 校准ADC */
-    adc_calibration_enable(ADC2);
-    /* 配置ADC通道，PF9对应于ADC通道7 */
-    adc_regular_channel_config(ADC2, 0, ADC_CHANNEL_7, ADC_SAMPLETIME_15);
-    /* 设置ADC的转换模式为单次转换 */
-    adc_external_trigger_config(ADC2, ADC_REGULAR_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
-    adc_external_trigger_config(ADC2, ADC_INSERTED_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
-}
-
 void ADC2_DMA_init_454(void)
 {
 
@@ -544,12 +530,12 @@ void ADC2_init_454(void)
     adc_external_trigger_config(ADC2, ADC_REGULAR_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
 
     adc_channel_length_config(ADC2, ADC_REGULAR_CHANNEL, 6);
-    adc_regular_channel_config(ADC2, 0, ADC_CHANNEL_4, ADC_SAMPLETIME_15);  // p4比例阀
-    adc_regular_channel_config(ADC2, 1, ADC_CHANNEL_5, ADC_SAMPLETIME_15);  // P5电磁阀
-    adc_regular_channel_config(ADC2, 2, ADC_CHANNEL_6, ADC_SAMPLETIME_15);  // P6电磁阀
-    adc_regular_channel_config(ADC2, 3, ADC_CHANNEL_7, ADC_SAMPLETIME_15);  // PSE540
+    adc_regular_channel_config(ADC2, 0, ADC_CHANNEL_4, ADC_SAMPLETIME_15); // p4比例阀
+    adc_regular_channel_config(ADC2, 1, ADC_CHANNEL_5, ADC_SAMPLETIME_15); // P5电磁阀
+    adc_regular_channel_config(ADC2, 2, ADC_CHANNEL_6, ADC_SAMPLETIME_15); // P6电磁阀
+    adc_regular_channel_config(ADC2, 3, ADC_CHANNEL_7, ADC_SAMPLETIME_15); // PSE540
     adc_regular_channel_config(ADC2, 4, ADC_CHANNEL_8, ADC_SAMPLETIME_15); // 温度(备用)
-    adc_regular_channel_config(ADC2, 5, ADC_CHANNEL_9, ADC_SAMPLETIME_15);  // 辅助氧浓度传感器
+    adc_regular_channel_config(ADC2, 5, ADC_CHANNEL_9, ADC_SAMPLETIME_15); // P16辅助氧浓度传感器
 
     adc_software_trigger_enable(ADC2, ADC_REGULAR_CHANNEL);
 }
@@ -823,7 +809,6 @@ uint8_t usart0_send_454(uint8_t *string, uint16_t count_size)
     dma_channel_enable(DMA1, DMA_CH7);
     return 0;
 }
-
 uint8_t usart0_receive_454(uint8_t *buffer, uint16_t buffer_size)
 {
     while (DMA_CHCTL(DMA1, DMA_CH2) & DMA_CHXCTL_CHEN)
@@ -838,7 +823,6 @@ uint8_t usart0_receive_454(uint8_t *buffer, uint16_t buffer_size)
 
     return 0; // 返回0表示成功
 }
-
 uint8_t usart1_send_454(uint8_t *string, uint16_t count_size)
 {
     while (DMA_CHCTL(DMA0, DMA_CH6) & DMA_CHXCTL_CHEN)
@@ -858,7 +842,6 @@ uint8_t usart1_receive_454(void)
         ;
     return usart_data_receive(USART1);
 }
-
 uint8_t usart2_send_454(uint8_t *string, uint16_t count_size)
 {
     while (DMA_CHCTL(DMA0, DMA_CH3) & DMA_CHXCTL_CHEN)
@@ -998,7 +981,7 @@ void mark________________(int LINE)
     log_454(intToStr(LINE));
     log_454("\n");
 }
-
+//压力
 void send_register_value(uintptr_t reg_address, uint8_t reg_size)
 {
     switch (reg_size)
@@ -1025,7 +1008,6 @@ void send_register_value(uintptr_t reg_address, uint8_t reg_size)
         break;
     }
 }
-
 uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, i2c_flag_enum flag, FlagStatus expected_Status)
 {
     uint32_t timeout = 0xFFFF;
@@ -1039,7 +1021,6 @@ uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, i2c_flag_enum flag, FlagSta
     }
     return 0; // Success
 }
-
 int i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address)
 {
     if (length == 2)
@@ -1133,7 +1114,6 @@ int i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint
         return 0;
     }
 }
-
 int i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address)
 {
     while (i2c_flag_get(i2c_periph, I2C_FLAG_I2CBSY))
@@ -1165,7 +1145,6 @@ int i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_
         ;
     return 0;
 }
-
 void I2C_Scan(uint32_t i2c_periph)
 {
     log_454("Scanning for I2C devices...\r\n");
@@ -1187,7 +1166,6 @@ void I2C_Scan(uint32_t i2c_periph)
 
     log_454("I2C scan completed.\r\n");
 }
-
 uint8_t ZXP_Initial(uint32_t i2c_periph)
 {
     i2c_master_send(i2c_periph, ZXP3010D_Address, 1, ZXP3010D_Address);
@@ -1206,7 +1184,6 @@ uint8_t ZXP_Initial(uint32_t i2c_periph)
     // i2c_master_send(i2c_periph, &reg_cmd[2], 1, ZXP3010D_Address);
     // i2c_master_receive(i2c_periph, &reg[2], 1, ZXP3010D_Address);
 }
-
 void ZXP_StartP(uint32_t i2c_periph)
 {
 
@@ -1221,7 +1198,6 @@ void ZXP_StartP(uint32_t i2c_periph)
     buf[1] = 0x09;
     i2c_master_send(i2c_periph, buf, 2, ZXP3010D_Address);
 }
-
 void ZXP_StartT(uint32_t i2c_periph)
 {
     uint8_t buf[4];
@@ -1234,7 +1210,6 @@ void ZXP_StartT(uint32_t i2c_periph)
     buf[1] = 0x08;
     i2c_master_send(i2c_periph, buf, 2, ZXP3010D_Address);
 }
-
 uint8_t ZXP_ConStatus(uint32_t i2c_periph)
 {
     uint8_t status;
@@ -1246,7 +1221,6 @@ uint8_t ZXP_ConStatus(uint32_t i2c_periph)
     status = (buf[0] >> 3) & 0x01;
     return status;
 }
-
 int32_t ZXP_ResultP(uint32_t i2c_periph)
 {
 
@@ -1262,7 +1236,6 @@ int32_t ZXP_ResultP(uint32_t i2c_periph)
     ltemp |= buf[2];
     return (ltemp);
 }
-
 int32_t ZXP_ResultT(uint32_t i2c_periph)
 {
     int32_t ltemp;
@@ -1279,7 +1252,6 @@ int32_t ZXP_ResultT(uint32_t i2c_periph)
 
     return (ltemp);
 }
-
 void ZXP8_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
 {
     float fp, ft, ftemp;
@@ -1299,7 +1271,6 @@ void ZXP8_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
     *rp = fp;
     *rt = ft;
 }
-
 void ZXP2_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
 {
     float fp, ft, ftemp;
@@ -1319,7 +1290,6 @@ void ZXP2_Caculate(int32_t up, int32_t ut, float *rp, float *rt)
     *rp = fp;
     *rt = ft;
 }
-
 void ZXP8_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
 {
     int32_t press;
@@ -1344,7 +1314,6 @@ void ZXP8_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
 
     ZXP8_Caculate(press, temp, fPress, fTemp);
 }
-
 void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
 {
     int32_t press;
@@ -1367,7 +1336,7 @@ void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
 
     ZXP2_Caculate(press, temp, fPress, fTemp);
 }
-
+//流量
 void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
 {
     uint8_t buf[2];
@@ -1377,17 +1346,15 @@ void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
     float actual_flow = (float)raw_flow / 100.00;
     *flow_data = (float)actual_flow;
 }
-
+//温度
 FlagStatus drdy1_status(void)
 {
     return gpio_input_bit_get(GPIOG, GPIO_PIN_1);
 }
-
 FlagStatus drdy2_status(void)
 {
     return gpio_input_bit_get(GPIOG, GPIO_PIN_0);
 }
-
 // if (cs_pin == GPIO_PIN_15)
 // {
 //     // 添加超时逻辑
@@ -1399,7 +1366,6 @@ FlagStatus drdy2_status(void)
 //     while (drdy2_status())
 //         ; // 等待DRDY信号2
 // }
-
 void MAX31865_CsOn(uint32_t cs_pin)
 {
     gpio_bit_reset(GPIOB, cs_pin);
@@ -1421,7 +1387,6 @@ uint8_t SPI1_Transfer(uint32_t cs_pin, uint8_t data)
     data_receive = spi_i2s_data_receive(SPI1);
     return data_receive;
 }
-
 void MAX31865_Spi_WriteByte(uint32_t cs_pin, uint8_t data)
 {
     SPI1_Transfer(cs_pin, data);
@@ -1430,7 +1395,6 @@ uint8_t MAX31865_Spi_ReadByte(uint32_t cs_pin)
 {
     return SPI1_Transfer(cs_pin, 0x00);
 }
-
 void MAX31865_bufWrite(uint32_t cs_pin, uint8_t addr, uint8_t value)
 {
     MAX31865_CsOn(cs_pin);
@@ -1451,7 +1415,6 @@ void MAX31865_HWInit(uint32_t cs_pin)
 {
     MAX31865_bufWrite(cs_pin, 0x00, 0xC1);
 }
-
 int16_t MAX31865_TempGet_454(uint32_t cs_pin)
 {
     uint8_t fault;
@@ -1489,29 +1452,12 @@ int16_t MAX31865_TempGet_454(uint32_t cs_pin)
 
     Rt = buf;
     RTD = Rt * 400 / 32768.00;
-    log_454("\n RTD::!!");
-    log_454(floatToStr(RTD, 2));
-
     temp = ((RTD - 100) / 0.385055);
-
-    log_454("\n TEMP::");
-    log_454(floatToStr(temp, 2));
 
     temp18b20 = (int16_t)temp;
     return temp18b20;
 }
-
-uint16_t PSE540_value_read(void)
-{
-    /* 启动ADC转换 */
-    adc_software_trigger_enable(ADC2, ADC_REGULAR_CHANNEL);
-    /* 等待转换完成 */
-    while (adc_flag_get(ADC2, ADC_FLAG_EOC) == RESET)
-        ;
-    /* 读取ADC转换结果 */
-    return adc_regular_data_read(ADC2);
-}
-
+//电磁阀
 void P4_PWM_set(uint32_t pulse)
 {
     if (pulse == 0)
@@ -1551,7 +1497,6 @@ void P6_PWM_set(uint32_t pulse)
         timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, (pulse > 1) ? (pulse - 1) : 1);
     }
 }
-
 // 压电阀片
 void YDP_control(FlagStatus on)
 {
@@ -1565,7 +1510,6 @@ void YDP_control(FlagStatus on)
     }
     ms_delay_454(2);
 }
-
 // 电机
 void send_motor_control_frame(uint16_t speed)
 {
@@ -1589,7 +1533,6 @@ void send_motor_control_frame(uint16_t speed)
     //         ;
     // }
 }
-
 //
 //
 //
@@ -1608,7 +1551,6 @@ void I2C1_EV_IRQHandler(void)
     //     // i2c_interrupt_flag_clear(I2C1, I2C_INT_FLAG_ADDSEND);
     // }
 }
-
 void DMA0_Channel6_IRQHandler(void)
 {
     if (dma_interrupt_flag_get(DMA0, DMA_CH6, DMA_INT_FLAG_FTF) != RESET)
@@ -1617,7 +1559,6 @@ void DMA0_Channel6_IRQHandler(void)
         dma_channel_disable(DMA0, DMA_CH6);
     }
 }
-
 void DMA1_Channel7_IRQHandler(void)
 {
     if (dma_interrupt_flag_get(DMA1, DMA_CH7, DMA_INT_FLAG_FTF) != RESET)
@@ -1646,8 +1587,11 @@ void DMA0_Channel3_IRQHandler(void)
 // USART2_RX 电机接收数据帧处理
 void DMA0_Channel1_IRQHandler(void)
 {
+    gpio_bit_toggle(GPIOG, GPIO_PIN_7);
+
     if (dma_interrupt_flag_get(DMA0, DMA_CH1, DMA_INT_FLAG_FTF) != RESET)
     {
+        // usart2_send_454(MOTOR_received_frame, 6);
         // // 验证帧头
         // if (MOTOR_received_frame[0] != 0x90)
         // {

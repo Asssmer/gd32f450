@@ -118,7 +118,6 @@ FlagStatus drdy1_status(void);
 FlagStatus drdy2_status(void);
 
 // ADC
-uint16_t PSE540_value_read(void);
 float adc_to_voltage(uint16_t adc_value);
 
 // PWM

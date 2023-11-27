@@ -5,7 +5,8 @@
 int main(void)
 {
         init_454();
-        char buff[256]={0};
+        char buff[256] = {0};
+        buff[0] = 0x55;
 
         float i2c0_fTemp = 0;
         float i2c0_fPress = 0;
@@ -32,20 +33,27 @@ int main(void)
         extern volatile MotorStatus motor_status;
         log_454("\n start!!\n");
         ms_delay_454(2000);
-        send_motor_control_frame(20000);
         // gpio_bit_toggle(GPIOG, GPIO_PIN_7);
+        send_motor_control_frame(20000);
         while (1)
         {
+
+                // usart2_send_454(buff, 1);
+
+                // while (RESET == usart_flag_get(USART2, USART_FLAG_TBE))
+                //         ;
+                // usart_data_transmit(USART2, 0x55);
+
                 // usart0_receive_454(buff,10);
                 // usart0_send_454(buff,10);
 
-                for (int channel = 0; channel < 6; ++channel)
-                {
-                        // adc_values[channel] = adc_regular_data_read(ADC2);
-                        log_454(floatToStr(adc_to_voltage(adc_values_454[channel]), 2));
-                        log_454("\n");
-                        ms_delay_454(500);
-                }
+                // for (int channel = 0; channel < 6; ++channel)
+                // {
+                //         // adc_values[channel] = adc_regular_data_read(ADC2);
+                //         log_454(floatToStr(adc_to_voltage(adc_values_454[channel]), 2));
+                //         log_454("\n");
+                //         ms_delay_454(500);
+                // }
 
                 // uint16_t PSE540_value = PSE540_value_read();
                 // log_454("\n PSE540_value::");
@@ -84,8 +92,9 @@ int main(void)
                 // PWM_EN_disable(GPIO_PIN_1);
                 // ms_delay_454(1000);
                 // break;
-        ms_delay_454(1000);
-        log_454("\n end!!\n");
+                gpio_bit_toggle(GPIOG, GPIO_PIN_6);
+                ms_delay_454(1000);
+                log_454("\n end!!\n");
         }
         return 0;
 }
