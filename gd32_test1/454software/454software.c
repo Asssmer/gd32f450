@@ -1,11 +1,16 @@
 #include "./454software.h"
 
 char strOutput_454[MAX_STR_SIZE]; // 存储转换后的字符串
-volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
 volatile uint8_t MOTOR_received_frame[MOTOR_FRAME_SIZE];
+//-----------------------------------------------------------------------
+//                       全局数据
+//-----------------------------------------------------------------------
+volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
 volatile MotorStatus motor_status;
 volatile pwm_capture_data_t pwm_values = {0};
-
+//-----------------------------------------------------------------------
+//                       初始化
+//-----------------------------------------------------------------------
 void init_454(void)
 {
     RCU_init_454();
@@ -795,7 +800,9 @@ int log_454(uint8_t *string)
     return 0;
 }
 #endif
-
+//-----------------------------------------------------------------------
+//                       USART
+//-----------------------------------------------------------------------
 uint8_t usart0_send_454(uint8_t *string, uint16_t count_size)
 {
     while (DMA_CHCTL(DMA1, DMA_CH7) & DMA_CHXCTL_CHEN)
@@ -905,7 +912,6 @@ char *intToStr(int num)
 
     return start;
 }
-
 char *floatToStr(float num, int afterpoint)
 {
     // Check buffer size
@@ -969,7 +975,6 @@ char *floatToStr(float num, int afterpoint)
 
     return start;
 }
-
 float adc_to_voltage(uint16_t adc_value)
 {
     return (adc_value * 3.3f) / 4095;
@@ -981,7 +986,9 @@ void mark________________(int LINE)
     log_454(intToStr(LINE));
     log_454("\n");
 }
-// 压力
+//-----------------------------------------------------------------------
+//                       压力
+//-----------------------------------------------------------------------
 void send_register_value(uintptr_t reg_address, uint8_t reg_size)
 {
     switch (reg_size)
@@ -1336,7 +1343,9 @@ void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
 
     ZXP2_Caculate(press, temp, fPress, fTemp);
 }
-// 流量
+//-----------------------------------------------------------------------
+//                       流量
+//-----------------------------------------------------------------------
 void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
 {
     uint8_t buf[2];
@@ -1346,7 +1355,9 @@ void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
     float actual_flow = (float)raw_flow / 100.00;
     *flow_data = (float)actual_flow;
 }
-// 温度
+//-----------------------------------------------------------------------
+//                       温度
+//-----------------------------------------------------------------------
 FlagStatus drdy1_status(void)
 {
     return gpio_input_bit_get(GPIOG, GPIO_PIN_1);
@@ -1457,7 +1468,9 @@ int16_t MAX31865_TempGet_454(uint32_t cs_pin)
     temp18b20 = (int16_t)temp;
     return temp18b20;
 }
-// 电磁阀
+//-----------------------------------------------------------------------
+//                       电磁阀
+//-----------------------------------------------------------------------
 void P4_PWM_set(uint32_t pulse)
 {
     timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, pulse);
@@ -1470,8 +1483,9 @@ void P6_PWM_set(uint32_t pulse)
 {
     timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, pulse);
 }
-
-// 压电阀片
+//-----------------------------------------------------------------------
+//                       压电阀片
+//-----------------------------------------------------------------------
 void YDP_control(FlagStatus on)
 {
     if (on)
@@ -1484,7 +1498,9 @@ void YDP_control(FlagStatus on)
     }
     ms_delay_454(2);
 }
-// 电机
+//-----------------------------------------------------------------------
+//                       电机
+//-----------------------------------------------------------------------
 void send_motor_control_frame(uint16_t speed)
 {
     uint8_t frame[4];
@@ -1507,16 +1523,13 @@ void send_motor_control_frame(uint16_t speed)
     //         ;
     // }
 }
-//-----------------------------------------------------------------------//
-//
+//-----------------------------------------------------------------------
 //
 //
 //                       中断函数
 //
 //
-//
-//
-//------------------------------------------------------------------------//
+//-----------------------------------------------------------------------
 void TIMER4_IRQHandler(void)
 {
     if (timer_interrupt_flag_get(TIMER4, TIMER_INT_FLAG_CH0) != RESET)
