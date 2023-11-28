@@ -1,7 +1,7 @@
 Dependencies for Project 'gd32_test1', Target 'Target 1': (DO NOT MODIFY !)
 CompilerVersion: 6160000::V6.16::ARMCLANG
-F (.\main.c)(0x65643449)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -w-I./RTE/_Target_1-IC:/Keil_v5/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include-IC:/Keil_v5/Packs/GigaDevice/GD32F4xx_DFP/3.0.3/Device/F4XX/Firmware/Peripherals/inc-IC:/Keil_v5/Packs/GigaDevice/GD32F4xx_DFP/3.0.3/Device/F4XX/Include-D__UVISION_VERSION="535" -D_RTE_ -DGD32F450 -D_RTE_-o ./objects/main.o -MD)
-I (454software\454software.h)(0x65643272)
+F (.\main.c)(0x65659F73)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -w-I./RTE/_Target_1-IC:/Keil_v5/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include-IC:/Keil_v5/Packs/GigaDevice/GD32F4xx_DFP/3.0.3/Device/F4XX/Firmware/Peripherals/inc-IC:/Keil_v5/Packs/GigaDevice/GD32F4xx_DFP/3.0.3/Device/F4XX/Include-D__UVISION_VERSION="535" -D_RTE_ -DGD32F450 -D_RTE_-o ./objects/main.o -MD)
+I (454software\454software.h)(0x65658AB5)
 I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x603507D0)
 I (C:\Keil_v5\Packs\GigaDevice\GD32F4xx_DFP\3.0.3\Device\F4XX\Include\gd32f4xx.h)(0x652F7B57)
 I (C:\Keil_v5\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include\core_cm4.h)(0x626F4ADE)
@@ -42,8 +42,8 @@ I (C:\Keil_v5\Packs\GigaDevice\GD32F4xx_DFP\3.0.3\Device\F4XX\Firmware\Periphera
 I (C:\Keil_v5\Packs\GigaDevice\GD32F4xx_DFP\3.0.3\Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_trng.h)(0x622956DA)
 I (C:\Keil_v5\Packs\GigaDevice\GD32F4xx_DFP\3.0.3\Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_usart.h)(0x62282EA6)
 I (C:\Keil_v5\Packs\GigaDevice\GD32F4xx_DFP\3.0.3\Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_wwdgt.h)(0x622956DA)
-F (.\454software\454software.c)(0x65643BD7)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -w-I./RTE/_Target_1-IC:/Keil_v5/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include-IC:/Keil_v5/Packs/GigaDevice/GD32F4xx_DFP/3.0.3/Device/F4XX/Firmware/Peripherals/inc-IC:/Keil_v5/Packs/GigaDevice/GD32F4xx_DFP/3.0.3/Device/F4XX/Include-D__UVISION_VERSION="535" -D_RTE_ -DGD32F450 -D_RTE_-o ./objects/454software.o -MD)
-I (454software\.\454software.h)(0x65643272)
+F (.\454software\454software.c)(0x6565A6FD)(-xc -std=c99 --target=arm-arm-none-eabi -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -c-fno-rtti -funsigned-char -fshort-enums -fshort-wchar-gdwarf-4 -O0 -ffunction-sections -w-I./RTE/_Target_1-IC:/Keil_v5/Packs/ARM/CMSIS/5.9.0/CMSIS/Core/Include-IC:/Keil_v5/Packs/GigaDevice/GD32F4xx_DFP/3.0.3/Device/F4XX/Firmware/Peripherals/inc-IC:/Keil_v5/Packs/GigaDevice/GD32F4xx_DFP/3.0.3/Device/F4XX/Include-D__UVISION_VERSION="535" -D_RTE_ -DGD32F450 -D_RTE_-o ./objects/454software.o -MD)
+I (454software\.\454software.h)(0x65658AB5)
 I (C:\Keil_v5\ARM\ARMCLANG\include\stdint.h)(0x603507D0)
 I (C:\Keil_v5\Packs\GigaDevice\GD32F4xx_DFP\3.0.3\Device\F4XX\Include\gd32f4xx.h)(0x652F7B57)
 I (C:\Keil_v5\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include\core_cm4.h)(0x626F4ADE)

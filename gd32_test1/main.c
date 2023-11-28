@@ -23,20 +23,23 @@ int main(void)
 
         uint16_t PSE540_value = 0;
 
-        P4_PWM_set(1000);
-        P5_PWM_set(1000);
-        P6_PWM_set(1000);
+        P4_PWM_set(600);
+        P5_PWM_set(800);
+        P6_PWM_set(800);
         YDP_control(SET);
 
         extern volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
         extern volatile uint8_t MOTOR_received_frame[MOTOR_FRAME_SIZE];
         extern volatile MotorStatus motor_status;
+        extern volatile pwm_capture_data_t pwm_values;
+
+
         log_454("\n start!!\n");
-        ms_delay_454(2000);
         // gpio_bit_toggle(GPIOG, GPIO_PIN_7);
-        send_motor_control_frame(20000);
+        // send_motor_control_frame(20000);
         while (1)
         {
+                log_454(floatToStr(pwm_values.duty_cycle0, 2));
 
                 // usart2_send_454(buff, 1);
 

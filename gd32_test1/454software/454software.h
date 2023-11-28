@@ -49,6 +49,19 @@ typedef struct
     uint8_t checksum;           // 校验和
     uint8_t checksum_valid;      // 校验和是否有效
 } MotorStatus;
+typedef struct {
+    uint32_t rising_edge_value0;  // 上升沿时的计数器值
+    uint32_t falling_edge_value0; // 下降沿时的计数器值
+    float duty_cycle0;           // 计算得到的占空比
+
+    uint32_t rising_edge_value1;  // 上升沿时的计数器值
+    uint32_t falling_edge_value1; // 下降沿时的计数器值
+    float duty_cycle1;           // 计算得到的占空比
+
+    uint32_t rising_edge_value2;  // 上升沿时的计数器值
+    uint32_t falling_edge_value2; // 下降沿时的计数器值
+    float duty_cycle2;           // 计算得到的占空比
+} pwm_capture_data_t;
 
 
 
@@ -69,6 +82,7 @@ void PSE540_init_454(void);
 void ADC2_DMA_init_454(void);
 void ADC2_init_454(void);
 void PWM_init_454(void);
+void PWM_IN_init_454(void);
 
 // 工具函数
 void ms_delay_454(uint32_t ms);

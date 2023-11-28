@@ -1,13 +1,10 @@
 #include "./454software.h"
 
-/*!
-    initialize all 454
-*/
 char strOutput_454[MAX_STR_SIZE]; // 存储转换后的字符串
 volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
 volatile uint8_t MOTOR_received_frame[MOTOR_FRAME_SIZE];
-
 volatile MotorStatus motor_status;
+volatile pwm_capture_data_t pwm_values = {0};
 
 void init_454(void)
 {
@@ -25,6 +22,7 @@ void init_454(void)
     MAX31865_HWInit(GPIO_PIN_12);
 
     PWM_init_454();
+    PWM_IN_init_454();
     ADC2_DMA_init_454();
     ADC2_init_454();
 
@@ -77,6 +75,7 @@ void NVIC_init_454(void)
 
     nvic_irq_enable(DMA1_Channel7_IRQn, 0, 6); // USART0_TX
     nvic_irq_enable(DMA1_Channel2_IRQn, 0, 5); // USART0_RX
+    nvic_irq_enable(TIMER4_IRQn, 0, 4);        // PWM_IN
 
     nvic_irq_enable(DMA0_Channel3_IRQn, 0, 2); // USART2_TX
     nvic_irq_enable(DMA0_Channel1_IRQn, 0, 1); // USART2_RX
@@ -589,7 +588,7 @@ void PWM_init_454(void)
 
     timer_channel_output_config(TIMER2, TIMER_CH_0, &timer2_ocinitpara);
     // 设置PWM模式
-    timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, 499); // 根据需要调整占空比
+    timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, 500); // 根据需要调整占空比
     timer_channel_output_mode_config(TIMER2, TIMER_CH_0, TIMER_OC_MODE_PWM0);
     timer_channel_output_shadow_config(TIMER2, TIMER_CH_0, TIMER_OC_SHADOW_DISABLE);
     // 启动TIMER2
@@ -675,10 +674,9 @@ void PWM_init_454(void)
     // 启动TIMER3
     timer_auto_reload_shadow_enable(TIMER3);
     timer_enable(TIMER3);
-
-    //
-    //
-    //
+}
+void PWM_IN_init_454(void)
+{
     // PWM_IN-->TIMER4
     //  设置PA0为复用模式,复用功能为TIMER4_CH0
     gpio_mode_set(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_0);
@@ -701,20 +699,22 @@ void PWM_init_454(void)
 
     // 设置TIMER4的基础配置
     timer_deinit(TIMER4);
-    timer4_initpara.prescaler = 9; // 根据需要调整
+    timer4_initpara.prescaler = 9;
     timer4_initpara.alignedmode = TIMER_COUNTER_EDGE;
     timer4_initpara.counterdirection = TIMER_COUNTER_UP;
-    timer4_initpara.period = 999; // 根据需要调整
+    timer4_initpara.period = 10000;
     timer4_initpara.clockdivision = TIMER_CKDIV_DIV1;
     timer_init(TIMER4, &timer4_initpara);
 
-    // 设置TIMER4_CH1为输入捕获模式
-    timer4_icinitpara.icpolarity = TIMER_IC_POLARITY_RISING;     // 上升沿捕获
-    timer4_icinitpara.icselection = TIMER_IC_SELECTION_DIRECTTI; // 映射到TI1上
+    // 设置TIMER4_CH0为输入捕获模式
+    // timer4_icinitpara.icpolarity = TIMER_IC_POLARITY_RISING;
+    timer4_icinitpara.icpolarity = TIMER_IC_POLARITY_FALLING;
+    timer4_icinitpara.icselection = TIMER_IC_SELECTION_DIRECTTI; // 映射到TI0上
     timer4_icinitpara.icprescaler = TIMER_IC_PSC_DIV1;           // 不分频
-    timer4_icinitpara.icfilter = 0;                              // 不滤波
-    timer_input_capture_config(TIMER4, TIMER_CH_1, &timer4_icinitpara);
+    timer4_icinitpara.icfilter = 5;
+    timer_input_capture_config(TIMER4, TIMER_CH_0, &timer4_icinitpara);
 
+    timer_interrupt_enable(TIMER4, TIMER_INT_CH0);
     // 启用TIMER4
     timer_enable(TIMER4);
 }
@@ -981,7 +981,7 @@ void mark________________(int LINE)
     log_454(intToStr(LINE));
     log_454("\n");
 }
-//压力
+// 压力
 void send_register_value(uintptr_t reg_address, uint8_t reg_size)
 {
     switch (reg_size)
@@ -1336,7 +1336,7 @@ void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
 
     ZXP2_Caculate(press, temp, fPress, fTemp);
 }
-//流量
+// 流量
 void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
 {
     uint8_t buf[2];
@@ -1346,7 +1346,7 @@ void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
     float actual_flow = (float)raw_flow / 100.00;
     *flow_data = (float)actual_flow;
 }
-//温度
+// 温度
 FlagStatus drdy1_status(void)
 {
     return gpio_input_bit_get(GPIOG, GPIO_PIN_1);
@@ -1457,46 +1457,20 @@ int16_t MAX31865_TempGet_454(uint32_t cs_pin)
     temp18b20 = (int16_t)temp;
     return temp18b20;
 }
-//电磁阀
+// 电磁阀
 void P4_PWM_set(uint32_t pulse)
 {
-    if (pulse == 0)
-    {
-        // 如果pulse为0，将脉冲宽度设置为0，占空比为0
-        timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, 0);
-    }
-    else
-    {
-        // 对于非零pulse，确保至少有一个脉冲
-        timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, (pulse > 1) ? (pulse - 1) : 1);
-    }
+    timer_channel_output_pulse_value_config(TIMER2, TIMER_CH_0, pulse);
 }
 void P5_PWM_set(uint32_t pulse)
 {
-    if (pulse == 0)
-    {
-        // 如果pulse为0，将脉冲宽度设置为0，占空比为0
-        timer_channel_output_pulse_value_config(TIMER12, TIMER_CH_0, 0);
-    }
-    else
-    {
-        // 对于非零pulse，确保至少有一个脉冲
-        timer_channel_output_pulse_value_config(TIMER12, TIMER_CH_0, (pulse > 1) ? (pulse - 1) : 1);
-    }
+    timer_channel_output_pulse_value_config(TIMER12, TIMER_CH_0, pulse);
 }
 void P6_PWM_set(uint32_t pulse)
 {
-    if (pulse == 0)
-    {
-        // 如果pulse为0，将脉冲宽度设置为0，占空比为0
-        timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, 0);
-    }
-    else
-    {
-        // 对于非零pulse，确保至少有一个脉冲
-        timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, (pulse > 1) ? (pulse - 1) : 1);
-    }
+    timer_channel_output_pulse_value_config(TIMER3, TIMER_CH_0, pulse);
 }
+
 // 压电阀片
 void YDP_control(FlagStatus on)
 {
@@ -1533,15 +1507,38 @@ void send_motor_control_frame(uint16_t speed)
     //         ;
     // }
 }
+//-----------------------------------------------------------------------//
+//
+//
+//
+//                       中断函数
 //
 //
 //
 //
-//
-//
-//
-//
-// 中断函数
+//------------------------------------------------------------------------//
+void TIMER4_IRQHandler(void)
+{
+    if (timer_interrupt_flag_get(TIMER4, TIMER_INT_FLAG_CH0) != RESET)
+    {
+        if (TIMER_CHCTL2(TIMER4) & TIMER_CHCTL2_CH0P)
+        {
+            // CH0P位设置，表示当前配置为捕获下降沿
+            pwm_values.falling_edge_value0 = timer_channel_capture_value_register_read(TIMER4, TIMER_CH_0);
+            TIMER_CHCTL2(TIMER4) &= ~TIMER_CHCTL2_CH0P;
+            timer_counter_value_config(TIMER4, 0);
+        }
+        else
+        {
+            pwm_values.rising_edge_value0 = timer_channel_capture_value_register_read(TIMER4, TIMER_CH_0);
+            TIMER_CHCTL2(TIMER4) |= TIMER_CHCTL2_CH0P;
+        }
+
+        pwm_values.duty_cycle0 = (float)(pwm_values.falling_edge_value0 - pwm_values.rising_edge_value0) / 1000.0;
+
+        timer_interrupt_flag_clear(TIMER4, TIMER_INT_FLAG_CH0);
+    }
+}
 void I2C1_EV_IRQHandler(void)
 {
     log_454("interrupt...");
@@ -1587,8 +1584,6 @@ void DMA0_Channel3_IRQHandler(void)
 // USART2_RX 电机接收数据帧处理
 void DMA0_Channel1_IRQHandler(void)
 {
-    gpio_bit_toggle(GPIOG, GPIO_PIN_7);
-
     if (dma_interrupt_flag_get(DMA0, DMA_CH1, DMA_INT_FLAG_FTF) != RESET)
     {
         // usart2_send_454(MOTOR_received_frame, 6);
