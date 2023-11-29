@@ -39,16 +39,9 @@ int main(void)
         // send_motor_control_frame(20000);
         while (1)
         {
-                log_454(floatToStr(pwm_values.duty_cycle0, 2));
+                // log_454(floatToStr(pwm_values.duty_cycle0, 2));
 
-                // usart2_send_454(buff, 1);
 
-                // while (RESET == usart_flag_get(USART2, USART_FLAG_TBE))
-                //         ;
-                // usart_data_transmit(USART2, 0x55);
-
-                // usart0_receive_454(buff,10);
-                // usart0_send_454(buff,10);
 
                 // for (int channel = 0; channel < 6; ++channel)
                 // {
@@ -57,13 +50,6 @@ int main(void)
                 //         log_454("\n");
                 //         ms_delay_454(500);
                 // }
-
-                // uint16_t PSE540_value = PSE540_value_read();
-                // log_454("\n PSE540_value::");
-                // log_454(floatToStr(adc_to_voltage(PSE540_value), 2));
-                // float PSE540_value_1=(PSE540_value/4095)*3.3;
-                // log_454("\n PSE540_value_1::");
-                // log_454(floatToStr(adc_to_voltage(PSE540_value_1), 2));
 
                 // P7_temp = MAX31865_TempGet_454(SPI_P7);
                 // log_454("\n P7::!!\n");
@@ -75,9 +61,9 @@ int main(void)
                 // I2C_Scan(I2C0);
 
 #ifdef BOARD_VER_2
-                // ZXP8_get_data_454(I2C0, &i2c0_fTemp, &i2c0_fPress);
-                // ZXP8_get_data_454(I2C1, &i2c1_fTemp, &i2c1_fPress);
-                // ZXP2_get_data_454(I2C2, &i2c2_fTemp, &i2c2_fPress);
+                ZXP8_get_data_454(I2C0, &i2c0_fTemp, &i2c0_fPress);
+                ZXP8_get_data_454(I2C1, &i2c1_fTemp, &i2c1_fPress);
+                ZXP2_get_data_454(I2C2, &i2c2_fTemp, &i2c2_fPress);
                 // FS4301_get_data_454(I2C0, &i2c0_flow);
 #endif
 
