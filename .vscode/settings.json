@@ -34,6 +34,7 @@
         "math.h": "c",
         "corecrt_math.h": "c",
         "xmemory": "c",
-        "gd32f4xx_adc.h": "c"
+        "gd32f4xx_adc.h": "c",
+        "cstdio": "c"
     }
 }

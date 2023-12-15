@@ -4,7 +4,7 @@
 #define GD32F450
 
 #include <stdint.h>
-// #include "core_cm4.h" 
+#include <stdio.h>
 #include "gd32f4xx.h"
 #include "gd32f4xx_rcu.h"
 #include "gd32f4xx_gpio.h"
@@ -34,7 +34,7 @@
 #define SPI_P7 GPIO_PIN_15
 #define SPI_P9 GPIO_PIN_12
 
-#define ADC_CHANNEL_COUNT 6
+#define ADC_CHANNEL_COUNT 4
 #define MOTOR_FRAME_SIZE 6 // 根据数据帧大小调整
 
 // 全局数据
@@ -43,7 +43,8 @@ extern volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
 typedef struct
 {
     uint8_t frame_header;       // 帧头
-    uint16_t current_speed;     // 当前转速
+    // uint16_t current_speed;     // 当前转速
+    float current_speed;     // 当前转速
     int8_t motor_temperature;   // 电机温度
     uint8_t fault_alarm;        // 故障报警状态
     uint8_t checksum;           // 校验和
@@ -91,6 +92,7 @@ char *intToStr(int num);
 char *floatToStr(float num, int afterpoint);
 void send_register_value(uintptr_t reg_address, uint8_t reg_size);
 void mark________________(int LINE);
+void usart_echo(uint32_t usart_periph);
 
 // USART
 uint8_t usart0_send_454(uint8_t *string, uint16_t count_size);

@@ -22,36 +22,36 @@ Dialog DLL:      TCM.DLL V1.53.0.0
  
 <h2>Project:</h2>
 C:\Users\m3098\Documents\GitHub\gd32f450\gd32F450_breath\gd32f450_driver_454.uvprojx
-Project File Date:  12/06/2023
+Project File Date:  12/07/2023
 
 <h2>Output:</h2>
 *** Using Compiler 'V6.16', folder: 'C:\Keil_v5\ARM\ARMCLANG\Bin'
 Rebuild target 'Target 1'
+compiling gd32f4xx_dac.c...
 compiling gd32f4xx_crc.c...
 compiling main.c...
-compiling gd32f4xx_can.c...
-compiling gd32f4xx_adc.c...
 compiling gd32f4xx_ctc.c...
-compiling gd32f4xx_dac.c...
+compiling gd32f4xx_adc.c...
+compiling gd32f4xx_can.c...
 compiling 454software.c...
 compiling gd32f4xx_dbg.c...
 compiling gd32f4xx_dci.c...
 compiling gd32f4xx_exti.c...
 compiling gd32f4xx_dma.c...
 compiling gd32f4xx_exmc.c...
+compiling gd32f4xx_fmc.c...
 compiling gd32f4xx_enet.c...
 compiling gd32f4xx_fwdgt.c...
-compiling gd32f4xx_fmc.c...
 compiling gd32f4xx_gpio.c...
-compiling gd32f4xx_ipa.c...
 compiling gd32f4xx_iref.c...
 compiling gd32f4xx_i2c.c...
-compiling gd32f4xx_misc.c...
+compiling gd32f4xx_ipa.c...
 compiling gd32f4xx_pmu.c...
+compiling gd32f4xx_misc.c...
 compiling gd32f4xx_rcu.c...
 compiling gd32f4xx_rtc.c...
-compiling gd32f4xx_syscfg.c...
 compiling gd32f4xx_sdio.c...
+compiling gd32f4xx_syscfg.c...
 compiling gd32f4xx_spi.c...
 compiling gd32f4xx_tli.c...
 compiling gd32f4xx_timer.c...
@@ -61,7 +61,7 @@ compiling gd32f4xx_wwdgt.c...
 compiling system_gd32f4xx.c...
 compiling gd32f4xx_usart.c...
 linking...
-Program Size: Code=17730 RO-data=514 RW-data=4 ZI-data=2228  
+Program Size: Code=16280 RO-data=504 RW-data=4 ZI-data=1092  
 ".\Objects\gd32f450_driver_454.axf" - 0 Error(s), 0 Warning(s).
 
 <h2>Software Packages used:</h2>
@@ -118,13 +118,13 @@ Package Vendor: GigaDevice
    * Component: ARM::CMSIS:CORE:5.6.0
 
    * Component: GigaDevice::Device:Startup:3.0.2
-      Source file:   Device\F4XX\Source\ARM\startup_gd32f450_470.s
-      Source file:   Device\F4XX\Source\system_gd32f4xx.c
       Include file:  Device\F4XX\Include\gd32f4xx.h
+      Source file:   Device\F4XX\Source\system_gd32f4xx.c
+      Source file:   Device\F4XX\Source\ARM\startup_gd32f450_470.s
 
    * Component: GigaDevice::Device:StdPeripherals:ADC:3.0.2
-      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_adc.c
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_adc.h
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_adc.c
 
    * Component: GigaDevice::Device:StdPeripherals:CAN:3.0.2
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_can.h
@@ -135,12 +135,12 @@ Package Vendor: GigaDevice
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_crc.c
 
    * Component: GigaDevice::Device:StdPeripherals:CTC:3.0.2
-      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_ctc.h
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_ctc.c
+      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_ctc.h
 
    * Component: GigaDevice::Device:StdPeripherals:DAC:3.0.2
-      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_dac.c
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_dac.h
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_dac.c
 
    * Component: GigaDevice::Device:StdPeripherals:DBG:3.0.2
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_dbg.h
@@ -151,8 +151,8 @@ Package Vendor: GigaDevice
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_dci.c
 
    * Component: GigaDevice::Device:StdPeripherals:DMA:3.0.2
-      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_dma.h
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_dma.c
+      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_dma.h
 
    * Component: GigaDevice::Device:StdPeripherals:ENET:3.0.2
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_enet.h
@@ -175,8 +175,8 @@ Package Vendor: GigaDevice
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_fwdgt.h
 
    * Component: GigaDevice::Device:StdPeripherals:GPIO:3.0.2
-      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_gpio.h
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_gpio.c
+      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_gpio.h
 
    * Component: GigaDevice::Device:StdPeripherals:I2C:3.0.2
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_i2c.c
@@ -191,8 +191,8 @@ Package Vendor: GigaDevice
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_iref.c
 
    * Component: GigaDevice::Device:StdPeripherals:MISC:3.0.2
-      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_misc.c
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_misc.h
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_misc.c
 
    * Component: GigaDevice::Device:StdPeripherals:PMU:3.0.2
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_pmu.c
@@ -203,8 +203,8 @@ Package Vendor: GigaDevice
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_rcu.c
 
    * Component: GigaDevice::Device:StdPeripherals:RTC:3.0.2
-      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_rtc.c
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_rtc.h
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_rtc.c
 
    * Component: GigaDevice::Device:StdPeripherals:SDIO:3.0.2
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_sdio.h
@@ -215,8 +215,8 @@ Package Vendor: GigaDevice
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_spi.h
 
    * Component: GigaDevice::Device:StdPeripherals:SYSCFG:3.0.2
-      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_syscfg.h
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_syscfg.c
+      Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_syscfg.h
 
    * Component: GigaDevice::Device:StdPeripherals:TIMER:3.0.2
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_timer.c
@@ -231,12 +231,12 @@ Package Vendor: GigaDevice
       Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_trng.c
 
    * Component: GigaDevice::Device:StdPeripherals:USART:3.0.2
-      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_usart.c
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_usart.h
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_usart.c
 
    * Component: GigaDevice::Device:StdPeripherals:WWDGT:3.0.2
-      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_wwdgt.c
       Include file:  Device\F4XX\Firmware\Peripherals\inc\gd32f4xx_wwdgt.h
+      Source file:   Device\F4XX\Firmware\Peripherals\src\gd32f4xx_wwdgt.c
 Build Time Elapsed:  00:00:02
 </pre>
 </body>

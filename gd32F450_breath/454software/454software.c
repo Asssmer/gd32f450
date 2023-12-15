@@ -82,9 +82,7 @@ void NVIC_init_454(void)
     nvic_irq_enable(DMA1_Channel2_IRQn, 0, 5); // USART0_RX
     nvic_irq_enable(TIMER4_IRQn, 0, 4);        // PWM_IN
 
-    nvic_irq_enable(DMA0_Channel3_IRQn, 0, 2); // USART2_TX
     nvic_irq_enable(DMA0_Channel1_IRQn, 0, 1); // USART2_RX
-
     // nvic_irq_enable(I2C0_EV_IRQn, 0, 3);
     // nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
     // nvic_irq_enable(I2C0_ER_IRQn, 0, 2);
@@ -239,13 +237,10 @@ void USART0_init_454(void)
 
 void USART2_init_454(void)
 {
-
-    /* Configure USART2 */
     usart_deinit(USART2);
     usart_disable(USART2);
     usart_word_length_set(USART2, USART_WL_8BIT);
     usart_stop_bit_set(USART2, USART_STB_1BIT);
-    // usart_baudrate_set(USART2, 115200U);
     usart_baudrate_set(USART2, 250000U);
     usart_parity_config(USART2, USART_PM_NONE);
 
@@ -253,28 +248,11 @@ void USART2_init_454(void)
     usart_hardware_flow_cts_config(USART2, USART_CTS_DISABLE);
     usart_receive_config(USART2, USART_RECEIVE_ENABLE);
     usart_transmit_config(USART2, USART_TRANSMIT_ENABLE);
+
     usart_dma_receive_config(USART2, USART_DENR_ENABLE);
-    usart_dma_transmit_config(USART2, USART_DENT_ENABLE);
 
-    /* Configure USART2_TX DMA */
-    dma_deinit(DMA0, DMA_CH3);
-    dma_single_data_parameter_struct dma_init_struct_TX;
-    dma_single_data_para_struct_init(&dma_init_struct_TX);
-
-    dma_init_struct_TX.periph_addr = (uint32_t)&USART_DATA(USART2);
-    dma_init_struct_TX.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
-    dma_init_struct_TX.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
-    dma_init_struct_TX.periph_memory_width = DMA_MEMORY_WIDTH_8BIT;
-    dma_init_struct_TX.direction = DMA_MEMORY_TO_PERIPH;
-    dma_init_struct_TX.priority = DMA_PRIORITY_HIGH;
-
-    dma_single_data_mode_init(DMA0, DMA_CH3, &dma_init_struct_TX);
-    dma_channel_subperipheral_select(DMA0, DMA_CH3, DMA_SUBPERI4);
-    dma_interrupt_enable(DMA0, DMA_CH3, DMA_CHXCTL_FTFIE);
-
-    /* Configure USART2_RX DMA */
+    //! Configure USART2_RX DMA
     dma_channel_disable(DMA0, DMA_CH1);
-    // 初始化DMA
     dma_deinit(DMA0, DMA_CH1);
     dma_single_data_parameter_struct dma_init_struct_RX;
     dma_single_data_para_struct_init(&dma_init_struct_RX);
@@ -979,7 +957,33 @@ float adc_to_voltage(uint16_t adc_value)
 {
     return (adc_value * 3.3f) / 4095;
 }
+/* retarget the C library printf function to the USART */
+int fputc(int ch, FILE *f)
+{
+    usart_data_transmit(USART2, (uint8_t)ch);
+    while (RESET == usart_flag_get(USART2, USART_FLAG_TBE))
+        ;
+    return ch;
+}
+void usart_echo(uint32_t usart_periph)
+{
+    uint8_t data;
 
+    while (1)
+    {
+        // 检查指定的 USART 是否接收到数据
+        if (usart_flag_get(usart_periph, USART_FLAG_RBNE))
+        {
+            data = usart_data_receive(usart_periph); // 读取接收到的数据
+
+            // 等待发送缓冲区为空
+            while (RESET == usart_flag_get(usart_periph, USART_FLAG_TBE))
+                ;
+
+            usart_data_transmit(usart_periph, data); // 将接收到的数据回传
+        }
+    }
+}
 void mark________________(int LINE)
 {
     log_454("\n");
@@ -1515,13 +1519,12 @@ void send_motor_control_frame(uint16_t speed)
     frame[3] = check_sum;            // 校验
 
     // 通过 USART 发送数据
-    usart2_send_454(frame, 4);
-    // for (int i = 0; i < sizeof(frame); ++i)
-    // {
-    //     usart_data_transmit(USART2, frame[i]);
-    //     while (usart_flag_get(USART2, USART_FLAG_TBE) == RESET)
-    //         ;
-    // }
+    for (int i = 0; i < sizeof(frame); ++i)
+    {
+        while (usart_flag_get(USART2, USART_FLAG_TBE) == RESET)
+            ;
+        usart_data_transmit(USART2, frame[i]);
+    }
 }
 //-----------------------------------------------------------------------
 //
@@ -1585,47 +1588,19 @@ void DMA1_Channel2_IRQHandler(void)
         dma_channel_disable(DMA1, DMA_CH2);
     }
 }
-// USART2_TX 电机发送数据帧
-void DMA0_Channel3_IRQHandler(void)
-{
-    if (dma_interrupt_flag_get(DMA0, DMA_CH3, DMA_INT_FLAG_FTF) != RESET)
-    {
-        dma_interrupt_flag_clear(DMA0, DMA_CH3, DMA_INT_FLAG_FTF);
-        dma_channel_disable(DMA0, DMA_CH3);
-    }
-}
+
 // USART2_RX 电机接收数据帧处理
 void DMA0_Channel1_IRQHandler(void)
 {
     if (dma_interrupt_flag_get(DMA0, DMA_CH1, DMA_INT_FLAG_FTF) != RESET)
     {
-        // usart2_send_454(MOTOR_received_frame, 6);
-        // // 验证帧头
-        // if (MOTOR_received_frame[0] != 0x90)
-        // {
-        //     // 错误的帧头，可以在此处处理错误
-        //     return;
-        // }
-
-        // // 计算校验和
-        // uint8_t calculated_checksum = 0;
-        // for (int i = 1; i < MOTOR_FRAME_SIZE - 1; i++)
-        // {
-        //     calculated_checksum += MOTOR_received_frame[i];
-        // }
-        // // 验证校验和
-        // if (calculated_checksum != MOTOR_received_frame[MOTOR_FRAME_SIZE - 1])
-        // {
-        //     // 校验和不匹配，可以在此处处理错误
-        //     return;
-        // }
-        // 解析数据
-        motor_status.frame_header = MOTOR_received_frame[0];
-        motor_status.current_speed = (uint16_t)MOTOR_received_frame[2] << 8 | MOTOR_received_frame[1];
-        motor_status.motor_temperature = (int8_t)MOTOR_received_frame[3];
-        motor_status.fault_alarm = MOTOR_received_frame[4];
-        motor_status.checksum = MOTOR_received_frame[5];
-
+        // 验证帧头
+        if (MOTOR_received_frame[0] != 0x90)
+        {
+            motor_status.frame_header = MOTOR_received_frame[0];
+            usart_data_receive(USART2);
+            return;
+        }
         // 计算校验和
         uint8_t calculated_checksum = 0;
         for (int i = 1; i < MOTOR_FRAME_SIZE - 1; i++)
@@ -1633,11 +1608,19 @@ void DMA0_Channel1_IRQHandler(void)
             calculated_checksum += MOTOR_received_frame[i];
         }
         // 验证校验和
-        motor_status.checksum_valid = (calculated_checksum == motor_status.checksum);
-
-        // 在此处处理解析的数据
-        // 例如：更新状态、显示信息、执行控制逻辑等
+        if (calculated_checksum != MOTOR_received_frame[MOTOR_FRAME_SIZE - 1])
+        {
+            motor_status.checksum_valid = 1;
+            return;
+        }
+        // 解析数据
+        motor_status.frame_header = MOTOR_received_frame[0];
+        motor_status.current_speed = (uint16_t)MOTOR_received_frame[2] << 8 | MOTOR_received_frame[1];
+        motor_status.motor_temperature = (int8_t)MOTOR_received_frame[3];
+        motor_status.fault_alarm = MOTOR_received_frame[4];
+        motor_status.checksum = MOTOR_received_frame[5];
+        // 验证校验和
+        motor_status.checksum_valid = 0;
     }
     dma_interrupt_flag_clear(DMA0, DMA_CH1, DMA_INT_FLAG_FTF);
-    // dma_channel_disable(DMA0, DMA_CH1);
 }
