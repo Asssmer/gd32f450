@@ -30,7 +30,7 @@ void init_454(void)
     ADC2_DMA_init_454();
     ADC2_init_454();
 
-    ms_delay_454(2); //?初始化后的延时待定
+    delay_ms_454(2); //?初始化后的延时待定
 
     /* 配置PC9为CKOUT1 */
     // gpio_af_set(GPIOC, GPIO_AF_0, GPIO_PIN_9);
@@ -74,7 +74,7 @@ void NVIC_init_454(void)
 {
     nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
     // 数字越小，优先级越高
-    nvic_irq_enable(TIMER4_IRQn, 0, 4);        // PWM_IN
+    nvic_irq_enable(TIMER4_IRQn, 0, 4);         // PWM_IN
     nvic_irq_enable(DMA0_Channel1_IRQn, 0, 10); // USART2_RX
     // nvic_irq_enable(I2C0_EV_IRQn, 0, 3);
     // nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
@@ -135,7 +135,6 @@ void USART1_init_454(void)
     usart_hardware_flow_cts_config(USART1, USART_CTS_DISABLE);
     usart_receive_config(USART1, USART_RECEIVE_ENABLE);
     usart_transmit_config(USART1, USART_TRANSMIT_ENABLE);
-
 
     // Configure USART1 TX (PD5) as alternate function push-pull
     gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_5);
@@ -646,13 +645,10 @@ void PWM_IN_init_454(void)
     timer_enable(TIMER4);
 }
 
-/*!
-    \brief      ms_delay
-    \param[in]  ms: 16 bit
-    \param[out] none
-    \retval     none
-*/
-void ms_delay_454(uint32_t ms)
+//-----------------------------------------------------------------------
+//                       工具函数
+//-----------------------------------------------------------------------
+void delay_ms_454(uint32_t ms)
 {
     while (ms > 0)
     {
@@ -674,19 +670,32 @@ void ms_delay_454(uint32_t ms)
         timer_flag_clear(TIMER6, TIMER_FLAG_UP); // Clear overflow flag for next iteration
     }
 }
-
-void s_delay_454(uint32_t seconds)
+void delay_s_454(uint32_t seconds)
 {
     for (uint32_t i = 0; i < seconds; i++)
     {
-        ms_delay_454(1000);
+        delay_ms_454(1000);
     }
 }
 
-
-//-----------------------------------------------------------------------
-//                       USART
-//-----------------------------------------------------------------------
+int fputc(int ch, FILE *f)
+{
+    usart_data_transmit(USART0, (uint8_t)ch);
+    while (RESET == usart_flag_get(USART0, USART_FLAG_TBE))
+        ;
+    return ch;
+}
+int fgetc(FILE *f)
+{
+    while (usart_flag_get(USART0, USART_FLAG_RBNE) == RESET)
+        ;
+    int data = usart_data_receive(USART0);
+    return data;
+}
+int __backspace(FILE *f)
+{
+    return '\b';
+}
 
 char *intToStr(int num)
 {
@@ -801,25 +810,24 @@ float adc_to_voltage(uint16_t adc_value)
 {
     return (adc_value * 3.3f) / 4095;
 }
-
-
-int fputc(int ch, FILE *f)
+//-----------------------------------------------------------------------
+//                       LED
+//-----------------------------------------------------------------------
+void LED1(FlagStatus state)
 {
-    usart_data_transmit(USART0, (uint8_t)ch);
-    while (RESET == usart_flag_get(USART0, USART_FLAG_TBE))
-        ;
-    return ch;
+    gpio_bit_write(GPIOG, GPIO_PIN_6, state);
 }
-int fgetc(FILE *f) {
-    while (usart_flag_get(USART0, USART_FLAG_RBNE) == RESET);
-    int data = usart_data_receive(USART0);
-    return data;
+void LED2(FlagStatus state)
+{
+    gpio_bit_write(GPIOG, GPIO_PIN_7, state);
 }
-int __backspace(FILE *f) {
-    return '\b';
+void LED3(FlagStatus state)
+{
+    gpio_bit_write(GPIOG, GPIO_PIN_8, state);
 }
-
-
+//-----------------------------------------------------------------------
+//                       USART
+//-----------------------------------------------------------------------
 void usart_echo(uint32_t usart_periph)
 {
     uint8_t data;
@@ -839,12 +847,31 @@ void usart_echo(uint32_t usart_periph)
         }
     }
 }
-void mark________________(int LINE)
-{
-}
 //-----------------------------------------------------------------------
 //                       压力
 //-----------------------------------------------------------------------
+float P10_get(void)
+{
+    float i2c0_fTemp = 0;
+    float i2c0_fPress = 0;
+    ZXP8_get_data_454(I2C0, &i2c0_fTemp, &i2c0_fPress);
+    return i2c0_fPress;
+}
+float P11_get(void)
+{
+    float i2c2_fTemp = 0;
+    float i2c2_fPress = 0;
+    ZXP2_get_data_454(I2C2, &i2c2_fTemp, &i2c2_fPress);
+    return i2c2_fPress;
+}
+float P12_get(void)
+{
+    float i2c1_fTemp = 0;
+    float i2c1_fPress = 0;
+    ZXP8_get_data_454(I2C1, &i2c1_fTemp, &i2c1_fPress);
+    return i2c1_fPress;
+}
+
 uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, i2c_flag_enum flag, FlagStatus expected_Status)
 {
     uint32_t timeout = 0xFFFF;
@@ -994,10 +1021,9 @@ void I2C_Scan(uint32_t i2c_periph)
         }
         else
         {
-            printf("address:%d\n",address);
+            printf("address:%d\n", address);
         }
     }
-
 }
 uint8_t ZXP_Initial(uint32_t i2c_periph)
 {
@@ -1130,18 +1156,18 @@ void ZXP8_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
     ZXP_Initial(i2c_periph);
 
     ZXP_StartT(i2c_periph);
-    ms_delay_454(4);
+    delay_ms_454(4);
     do
     {
-        ms_delay_454(1);
+        delay_ms_454(1);
     } while (ZXP_ConStatus(i2c_periph));
     temp = ZXP_ResultT(i2c_periph);
 
     ZXP_StartP(i2c_periph);
-    ms_delay_454(12);
+    delay_ms_454(12);
     do
     {
-        ms_delay_454(1);
+        delay_ms_454(1);
     } while (ZXP_ConStatus(i2c_periph));
     press = ZXP_ResultP(i2c_periph);
 
@@ -1153,17 +1179,17 @@ void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
     int32_t temp = 0;
     ZXP_Initial(i2c_periph);
     ZXP_StartT(i2c_periph);
-    ms_delay_454(4);
+    delay_ms_454(4);
     do
     {
-        ms_delay_454(1);
+        delay_ms_454(1);
     } while (ZXP_ConStatus(i2c_periph));
     temp = ZXP_ResultT(i2c_periph);
     ZXP_StartP(i2c_periph);
-    ms_delay_454(12);
+    delay_ms_454(12);
     do
     {
-        ms_delay_454(1);
+        delay_ms_454(1);
     } while (ZXP_ConStatus(i2c_periph));
     press = ZXP_ResultP(i2c_periph);
 
@@ -1172,6 +1198,25 @@ void ZXP2_get_data_454(uint32_t i2c_periph, float *fTemp, float *fPress)
 //-----------------------------------------------------------------------
 //                       流量
 //-----------------------------------------------------------------------
+float P13_get(void)
+{
+    float i2c1_flow = 0;
+    FS4301_get_data_454(I2C1, &i2c1_flow);
+    return i2c1_flow;
+}
+float P14_get(void)
+{
+    float i2c0_flow = 0;
+    FS4301_get_data_454(I2C0, &i2c0_flow);
+    return i2c0_flow;
+}
+float P15_get(void)
+{
+    float i2c2_flow = 0;
+    FS4301_get_data_454(I2C2, &i2c2_flow);
+    return i2c2_flow;
+}
+
 void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
 {
     uint8_t buf[2];
@@ -1184,6 +1229,15 @@ void FS4301_get_data_454(uint32_t i2c_periph, float *flow_data)
 //-----------------------------------------------------------------------
 //                       温度
 //-----------------------------------------------------------------------
+int16_t P7_get(void)
+{
+    return MAX31865_TempGet_454(GPIO_PIN_15);
+}
+int16_t P9_get(void)
+{
+    return MAX31865_TempGet_454(GPIO_PIN_12);
+}
+
 FlagStatus drdy1_status(void)
 {
     return gpio_input_bit_get(GPIOG, GPIO_PIN_1);
@@ -1321,12 +1375,12 @@ void YDP_control(FlagStatus on)
     {
         gpio_bit_reset(GPIOB, GPIO_PIN_14); // 关闭压电阀片
     }
-    ms_delay_454(2);
+    delay_ms_454(2);
 }
 //-----------------------------------------------------------------------
 //                       电机
 //-----------------------------------------------------------------------
-void send_motor_control_frame(uint16_t speed)
+void motor_control(uint16_t speed)
 {
     uint8_t frame[4];
     uint8_t check_sum;
@@ -1385,8 +1439,6 @@ void I2C1_EV_IRQHandler(void)
     // }
 }
 
-
-
 // USART2_RX 电机接收数据帧处理
 void DMA0_Channel1_IRQHandler(void)
 {
@@ -1416,7 +1468,7 @@ void DMA0_Channel1_IRQHandler(void)
         }
         // 解析数据
         motor_status.frame_header = MOTOR_received_frame[0];
-        motor_status.current_speed = ((uint16_t)MOTOR_received_frame[2] << 8 | MOTOR_received_frame[1])*2;
+        motor_status.current_speed = ((uint16_t)MOTOR_received_frame[2] << 8 | MOTOR_received_frame[1]) * 2;
         motor_status.motor_temperature = (int8_t)MOTOR_received_frame[3];
         motor_status.fault_alarm = MOTOR_received_frame[4];
         motor_status.checksum = MOTOR_received_frame[5];

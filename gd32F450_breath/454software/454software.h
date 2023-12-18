@@ -20,6 +20,9 @@
 // #define BOARD_VER_1
 #define BOARD_VER_2
 
+#define ON  SET
+#define OFF RESET
+
 #define MAX_STR_SIZE 12 // 最大字符串长度，考虑到32位整数最大为10位，加上符号和空字符
 
 #define I2C0_OWN_ADDRESS7 0x72
@@ -30,9 +33,6 @@
 
 #define FS4301_Address 0xa0
 #define FS4301_CMD 0xa1
-
-#define SPI_P7 GPIO_PIN_15
-#define SPI_P9 GPIO_PIN_12
 
 #define ADC_CHANNEL_COUNT 4
 #define MOTOR_FRAME_SIZE 6 // 根据数据帧大小调整
@@ -86,11 +86,10 @@ void PWM_init_454(void);
 void PWM_IN_init_454(void);
 
 // 工具函数
-void ms_delay_454(uint32_t ms);
-void s_delay_454(uint32_t seconds);
+void delay_ms_454(uint32_t ms);
+void delay_s_454(uint32_t seconds);
 char *intToStr(int num);
 char *floatToStr(float num, int afterpoint);
-void mark________________(int LINE);
 void usart_echo(uint32_t usart_periph);
 
 // USART
@@ -110,7 +109,14 @@ uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, i2c_flag_enum flag, FlagSta
 int i2c_master_receive(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
 int i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_t address);
 void I2C_Scan(uint32_t i2c_periph);
-
+//压力获取
+float P10_get(void);
+float P11_get(void);
+float P12_get(void);
+//流量获取
+float P13_get(void);
+float P14_get(void);
+float P15_get(void);
 // SPI
 void MAX31865_CsOn(uint32_t cs_pin);
 void MAX31865_CsOff(uint32_t cs_pin);
@@ -123,7 +129,9 @@ void MAX31865_HWInit(uint32_t cs_pin);
 int16_t MAX31865_TempGet_454(uint32_t cs_pin);
 FlagStatus drdy1_status(void);
 FlagStatus drdy2_status(void);
-
+//温度获取
+int16_t P7_get(void);
+int16_t P9_get(void);
 // ADC
 float adc_to_voltage(uint16_t adc_value);
 
@@ -135,6 +143,6 @@ void P6_PWM_set(uint32_t pulse);
 void YDP_control(FlagStatus on);
 
 // 电机
-void send_motor_control_frame(uint16_t speed);
+void motor_control(uint16_t speed);
 
 #endif
