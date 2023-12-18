@@ -20,7 +20,6 @@ void init_454(void)
     YDP_init_454();
     TIMER_init_454();
     USART0_init_454();
-    USART1_init_454();
     USART2_init_454();
     SPI1_init_454();
     MAX31865_HWInit(GPIO_PIN_15);
@@ -61,7 +60,6 @@ void RCU_init_454(void)
 
     rcu_periph_clock_enable(RCU_TIMER6);
     rcu_periph_clock_enable(RCU_USART0);
-    rcu_periph_clock_enable(RCU_USART1);
     rcu_periph_clock_enable(RCU_USART2);
     rcu_periph_clock_enable(RCU_DMA0);
     rcu_periph_clock_enable(RCU_DMA1);
@@ -76,13 +74,8 @@ void NVIC_init_454(void)
 {
     nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
     // 数字越小，优先级越高
-    nvic_irq_enable(DMA0_Channel6_IRQn, 0, 7);
-
-    nvic_irq_enable(DMA1_Channel7_IRQn, 0, 6); // USART0_TX
-    nvic_irq_enable(DMA1_Channel2_IRQn, 0, 5); // USART0_RX
     nvic_irq_enable(TIMER4_IRQn, 0, 4);        // PWM_IN
-
-    nvic_irq_enable(DMA0_Channel1_IRQn, 0, 1); // USART2_RX
+    nvic_irq_enable(DMA0_Channel1_IRQn, 0, 10); // USART2_RX
     // nvic_irq_enable(I2C0_EV_IRQn, 0, 3);
     // nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
     // nvic_irq_enable(I2C0_ER_IRQn, 0, 2);
@@ -142,23 +135,7 @@ void USART1_init_454(void)
     usart_hardware_flow_cts_config(USART1, USART_CTS_DISABLE);
     usart_receive_config(USART1, USART_RECEIVE_ENABLE);
     usart_transmit_config(USART1, USART_TRANSMIT_ENABLE);
-    usart_dma_receive_config(USART1, USART_DENR_ENABLE);
-    usart_dma_transmit_config(USART1, USART_DENT_ENABLE);
 
-    /* Configure USART1 DMA */
-    dma_deinit(DMA0, DMA_CH6);
-    dma_multi_data_parameter_struct dma_init_struct;
-    dma_multi_data_para_struct_init(&dma_init_struct);
-    dma_init_struct.periph_addr = (uint32_t)&USART_DATA(USART1);
-    dma_init_struct.periph_width = DMA_PERIPH_WIDTH_8BIT;
-    dma_init_struct.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
-    dma_init_struct.memory_width = DMA_MEMORY_WIDTH_8BIT;
-    dma_init_struct.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
-    dma_init_struct.direction = DMA_MEMORY_TO_PERIPH;
-    dma_init_struct.priority = DMA_PRIORITY_LOW;
-    dma_multi_data_mode_init(DMA0, DMA_CH6, &dma_init_struct);
-    dma_channel_subperipheral_select(DMA0, DMA_CH6, DMA_SUBPERI4);
-    dma_interrupt_enable(DMA0, DMA_CH6, DMA_CHXCTL_FTFIE);
 
     // Configure USART1 TX (PD5) as alternate function push-pull
     gpio_af_set(GPIOD, GPIO_AF_7, GPIO_PIN_5);
@@ -188,38 +165,6 @@ void USART0_init_454(void)
     usart_hardware_flow_cts_config(USART0, USART_CTS_DISABLE);
     usart_receive_config(USART0, USART_RECEIVE_ENABLE);
     usart_transmit_config(USART0, USART_TRANSMIT_ENABLE);
-    usart_dma_receive_config(USART0, USART_DENR_ENABLE);
-    usart_dma_transmit_config(USART0, USART_DENT_ENABLE);
-
-    /* Configure USART0_TX DMA */
-    dma_deinit(DMA1, DMA_CH7);
-    dma_multi_data_parameter_struct dma_init_struct;
-    dma_multi_data_para_struct_init(&dma_init_struct);
-    dma_init_struct.periph_addr = (uint32_t)&USART_DATA(USART0);
-    dma_init_struct.periph_width = DMA_PERIPH_WIDTH_8BIT;
-    dma_init_struct.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
-    dma_init_struct.memory_width = DMA_MEMORY_WIDTH_8BIT;
-    dma_init_struct.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
-    dma_init_struct.direction = DMA_MEMORY_TO_PERIPH;
-    dma_init_struct.priority = DMA_PRIORITY_LOW;
-    dma_multi_data_mode_init(DMA1, DMA_CH7, &dma_init_struct);
-    dma_channel_subperipheral_select(DMA1, DMA_CH7, DMA_SUBPERI4);
-    dma_interrupt_enable(DMA1, DMA_CH7, DMA_CHXCTL_FTFIE);
-
-    /* Configure USART0_RX DMA */
-    dma_deinit(DMA1, DMA_CH2); // 清除DMA通道2的配置
-    dma_multi_data_parameter_struct dma_init_struct_RX;
-    dma_multi_data_para_struct_init(&dma_init_struct_RX);
-    dma_init_struct_RX.periph_addr = (uint32_t)&USART_DATA(USART0);
-    dma_init_struct_RX.periph_width = DMA_PERIPH_WIDTH_8BIT;
-    dma_init_struct_RX.periph_inc = DMA_PERIPH_INCREASE_DISABLE;
-    dma_init_struct_RX.memory_width = DMA_MEMORY_WIDTH_8BIT;
-    dma_init_struct_RX.memory_inc = DMA_MEMORY_INCREASE_ENABLE;
-    dma_init_struct_RX.direction = DMA_PERIPH_TO_MEMORY;
-    dma_init_struct_RX.priority = DMA_PRIORITY_LOW;
-    dma_multi_data_mode_init(DMA1, DMA_CH2, &dma_init_struct_RX);
-    dma_channel_subperipheral_select(DMA1, DMA_CH2, DMA_SUBPERI4); // 选择子外设4
-    dma_interrupt_enable(DMA1, DMA_CH2, DMA_CHXCTL_FTFIE);
 
     // Configure USART0_TX (PA9) as alternate function push-pull
     gpio_af_set(GPIOA, GPIO_AF_7, GPIO_PIN_9);
@@ -270,7 +215,6 @@ void USART2_init_454(void)
     dma_single_data_mode_init(DMA0, DMA_CH1, &dma_init_struct_RX);
     dma_channel_subperipheral_select(DMA0, DMA_CH1, DMA_SUBPERI4);
     dma_interrupt_enable(DMA0, DMA_CH1, DMA_CHXCTL_FTFIE);
-
     dma_channel_enable(DMA0, DMA_CH1);
 
     // Configure USART2 TX (PD8) as alternate function push-pull
@@ -739,110 +683,10 @@ void s_delay_454(uint32_t seconds)
     }
 }
 
-#ifdef BOARD_VER_2
-int log_454(uint8_t *string)
-{
-    uint8_t *start = string;
-    uint16_t count_size = 0;
-    while (*start++)
-    {
-        count_size++;
-        if (count_size > 1024)
-        {
-            log_454("string is too long!");
-            return -1;
-        }
-    }
-    usart0_send_454(string, count_size);
 
-    return 0;
-}
-#endif
-
-#ifdef BOARD_VER_1
-int log_454(uint8_t *string)
-{
-    uint8_t *start = string;
-    uint16_t count_size = 0;
-    while (*start++)
-    {
-        count_size++;
-        if (count_size > 1024)
-        {
-            log_454("string is too long!");
-            return -1;
-        }
-    }
-    usart1_send_454(string, count_size);
-
-    return 0;
-}
-#endif
 //-----------------------------------------------------------------------
 //                       USART
 //-----------------------------------------------------------------------
-uint8_t usart0_send_454(uint8_t *string, uint16_t count_size)
-{
-    while (DMA_CHCTL(DMA1, DMA_CH7) & DMA_CHXCTL_CHEN)
-    {
-    }
-    while (RESET == usart_flag_get(USART0, USART_FLAG_TC))
-    {
-    }
-    dma_memory_address_config(DMA1, DMA_CH7, DMA_MEMORY_0, string);
-    dma_transfer_number_config(DMA1, DMA_CH7, count_size);
-    dma_channel_enable(DMA1, DMA_CH7);
-    return 0;
-}
-uint8_t usart0_receive_454(uint8_t *buffer, uint16_t buffer_size)
-{
-    while (DMA_CHCTL(DMA1, DMA_CH2) & DMA_CHXCTL_CHEN)
-    {
-        // 等待DMA通道不忙
-    }
-    dma_memory_address_config(DMA1, DMA_CH2, DMA_MEMORY_0, (uint32_t)buffer);
-    dma_transfer_number_config(DMA1, DMA_CH2, buffer_size);
-    dma_channel_enable(DMA1, DMA_CH2);
-
-    // 可以在这里加入超时逻辑以避免死循环
-
-    return 0; // 返回0表示成功
-}
-uint8_t usart1_send_454(uint8_t *string, uint16_t count_size)
-{
-    while (DMA_CHCTL(DMA0, DMA_CH6) & DMA_CHXCTL_CHEN)
-    {
-    }
-    while (RESET == usart_flag_get(USART1, USART_FLAG_TC))
-    {
-    }
-    dma_memory_address_config(DMA0, DMA_CH6, DMA_MEMORY_0, string);
-    dma_transfer_number_config(DMA0, DMA_CH6, count_size);
-    dma_channel_enable(DMA0, DMA_CH6);
-    return 0;
-}
-uint8_t usart1_receive_454(void)
-{
-    while (usart_flag_get(USART1, USART_FLAG_RBNE) == RESET)
-        ;
-    return usart_data_receive(USART1);
-}
-uint8_t usart2_send_454(uint8_t *string, uint16_t count_size)
-{
-    while (DMA_CHCTL(DMA0, DMA_CH3) & DMA_CHXCTL_CHEN)
-    {
-    }
-    while (RESET == usart_flag_get(USART2, USART_FLAG_TC))
-    {
-    }
-    dma_memory_address_config(DMA0, DMA_CH3, DMA_MEMORY_0, string);
-    dma_transfer_number_config(DMA0, DMA_CH3, count_size);
-    dma_channel_enable(DMA0, DMA_CH3);
-    return 0;
-}
-uint8_t usart2_receive_454(void)
-{
-}
 
 char *intToStr(int num)
 {
@@ -957,14 +801,25 @@ float adc_to_voltage(uint16_t adc_value)
 {
     return (adc_value * 3.3f) / 4095;
 }
-/* retarget the C library printf function to the USART */
+
+
 int fputc(int ch, FILE *f)
 {
-    usart_data_transmit(USART2, (uint8_t)ch);
-    while (RESET == usart_flag_get(USART2, USART_FLAG_TBE))
+    usart_data_transmit(USART0, (uint8_t)ch);
+    while (RESET == usart_flag_get(USART0, USART_FLAG_TBE))
         ;
     return ch;
 }
+int fgetc(FILE *f) {
+    while (usart_flag_get(USART0, USART_FLAG_RBNE) == RESET);
+    int data = usart_data_receive(USART0);
+    return data;
+}
+int __backspace(FILE *f) {
+    return '\b';
+}
+
+
 void usart_echo(uint32_t usart_periph)
 {
     uint8_t data;
@@ -986,39 +841,10 @@ void usart_echo(uint32_t usart_periph)
 }
 void mark________________(int LINE)
 {
-    log_454("\n");
-    log_454(intToStr(LINE));
-    log_454("\n");
 }
 //-----------------------------------------------------------------------
 //                       压力
 //-----------------------------------------------------------------------
-void send_register_value(uintptr_t reg_address, uint8_t reg_size)
-{
-    switch (reg_size)
-    {
-    case 8:
-    {
-        uint8_t reg_value = *((volatile uint8_t *)reg_address);
-        usart1_send_454(&reg_value, sizeof(reg_value));
-        break;
-    }
-    case 16:
-    {
-        uint16_t reg_value = *((volatile uint16_t *)reg_address);
-        usart1_send_454((uint8_t *)&reg_value, sizeof(reg_value));
-        break;
-    }
-    case 32:
-    {
-        uint32_t reg_value = *((volatile uint32_t *)reg_address);
-        usart1_send_454((uint8_t *)&reg_value, sizeof(reg_value));
-        break;
-    }
-    default:
-        break;
-    }
-}
 uint32_t i2c_flag_check_timeout(uint32_t i2c_periph, i2c_flag_enum flag, FlagStatus expected_Status)
 {
     uint32_t timeout = 0xFFFF;
@@ -1158,7 +984,6 @@ int i2c_master_send(uint32_t i2c_periph, uint8_t *data, uint16_t length, uint16_
 }
 void I2C_Scan(uint32_t i2c_periph)
 {
-    log_454("Scanning for I2C devices...\r\n");
     uint8_t address;
 
     for (address = 1; address < 127; address++)
@@ -1169,13 +994,10 @@ void I2C_Scan(uint32_t i2c_periph)
         }
         else
         {
-            log_454("address:\n");
-            log_454(intToStr(address));
-            log_454("\n");
+            printf("address:%d\n",address);
         }
     }
 
-    log_454("I2C scan completed.\r\n");
 }
 uint8_t ZXP_Initial(uint32_t i2c_periph)
 {
@@ -1436,24 +1258,23 @@ int16_t MAX31865_TempGet_454(uint32_t cs_pin)
     // 读取故障寄存器来检查是否有故障
     // fault = MAX31865_bufRead(cs_pin, 0x07);
     fault = MAX31865_bufRead(cs_pin, 0x00);
-    log_454(intToStr(fault));
     // if (fault)
     // {
-    //     log_454("Fault detected!");
+    //     printf("Fault detected!");
     //     if (fault & 0x01)
-    //         log_454("RTD low threshold exceeded.");
+    //         printf("RTD low threshold exceeded.");
     //     if (fault & 0x02)
-    //         log_454("RTD high threshold exceeded.");
+    //         printf("RTD high threshold exceeded.");
     //     if (fault & 0x04)
-    //         log_454("Low power mode.");
+    //         printf("Low power mode.");
     //     if (fault & 0x08)
-    //         log_454("Refin- > 0.85 x Vbias.");
+    //         printf("Refin- > 0.85 x Vbias.");
     //     if (fault & 0x10)
-    //         log_454("Refin- < 0.85 x Vbias. Force open.");
+    //         printf("Refin- < 0.85 x Vbias. Force open.");
     //     if (fault & 0x20)
-    //         log_454("RTDIN- < 0.85 x Vbias. Force open.");
+    //         printf("RTDIN- < 0.85 x Vbias. Force open.");
     //     if (fault & 0x40)
-    //         log_454("Overvoltage or undervoltage error.");
+    //         printf("Overvoltage or undervoltage error.");
     // }
 
     float Z1, Z2, Z3, Z4, Rt, RTD, temp;
@@ -1557,48 +1378,28 @@ void TIMER4_IRQHandler(void)
 }
 void I2C1_EV_IRQHandler(void)
 {
-    log_454("interrupt...");
     // if (i2c_interrupt_flag_get(I2C1, I2C_INT_FLAG_ADDSEND))
     // {
     //     /* clear the ADDSEND bit */
     //     // i2c_interrupt_flag_clear(I2C1, I2C_INT_FLAG_ADDSEND);
     // }
 }
-void DMA0_Channel6_IRQHandler(void)
-{
-    if (dma_interrupt_flag_get(DMA0, DMA_CH6, DMA_INT_FLAG_FTF) != RESET)
-    {
-        dma_interrupt_flag_clear(DMA0, DMA_CH6, DMA_INT_FLAG_FTF);
-        dma_channel_disable(DMA0, DMA_CH6);
-    }
-}
-void DMA1_Channel7_IRQHandler(void)
-{
-    if (dma_interrupt_flag_get(DMA1, DMA_CH7, DMA_INT_FLAG_FTF) != RESET)
-    {
-        dma_interrupt_flag_clear(DMA1, DMA_CH7, DMA_INT_FLAG_FTF);
-        dma_channel_disable(DMA1, DMA_CH7);
-    }
-}
-void DMA1_Channel2_IRQHandler(void)
-{
-    if (dma_interrupt_flag_get(DMA1, DMA_CH2, DMA_INT_FLAG_FTF) != RESET)
-    {
-        dma_interrupt_flag_clear(DMA1, DMA_CH2, DMA_INT_FLAG_FTF);
-        dma_channel_disable(DMA1, DMA_CH2);
-    }
-}
+
+
 
 // USART2_RX 电机接收数据帧处理
 void DMA0_Channel1_IRQHandler(void)
 {
+    // dma_interrupt_disable(DMA0, DMA_CH1, DMA_CHXCTL_FTFIE);
     if (dma_interrupt_flag_get(DMA0, DMA_CH1, DMA_INT_FLAG_FTF) != RESET)
     {
         // 验证帧头
         if (MOTOR_received_frame[0] != 0x90)
         {
+            usart_dma_receive_config(USART2, USART_DENR_DISABLE);
             motor_status.frame_header = MOTOR_received_frame[0];
             usart_data_receive(USART2);
+            usart_dma_receive_config(USART2, USART_DENR_ENABLE);
             return;
         }
         // 计算校验和
@@ -1615,12 +1416,15 @@ void DMA0_Channel1_IRQHandler(void)
         }
         // 解析数据
         motor_status.frame_header = MOTOR_received_frame[0];
-        motor_status.current_speed = (uint16_t)MOTOR_received_frame[2] << 8 | MOTOR_received_frame[1];
+        motor_status.current_speed = ((uint16_t)MOTOR_received_frame[2] << 8 | MOTOR_received_frame[1])*2;
         motor_status.motor_temperature = (int8_t)MOTOR_received_frame[3];
         motor_status.fault_alarm = MOTOR_received_frame[4];
         motor_status.checksum = MOTOR_received_frame[5];
         // 验证校验和
         motor_status.checksum_valid = 0;
+        // printf("\n SPEED: %f\n",motor_status.current_speed);
+        // printf("\n TEMP_: %f\n",motor_status.motor_temperature);
     }
+    // dma_interrupt_enable(DMA0, DMA_CH1, DMA_CHXCTL_FTFIE);
     dma_interrupt_flag_clear(DMA0, DMA_CH1, DMA_INT_FLAG_FTF);
 }

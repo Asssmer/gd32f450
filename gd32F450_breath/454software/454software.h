@@ -45,7 +45,8 @@ typedef struct
     uint8_t frame_header;       // 帧头
     // uint16_t current_speed;     // 当前转速
     float current_speed;     // 当前转速
-    int8_t motor_temperature;   // 电机温度
+    // int8_t motor_temperature;   // 电机温度
+    float motor_temperature;   // 电机温度
     uint8_t fault_alarm;        // 故障报警状态
     uint8_t checksum;           // 校验和
     uint8_t checksum_valid;      // 校验和是否有效
@@ -87,21 +88,12 @@ void PWM_IN_init_454(void);
 // 工具函数
 void ms_delay_454(uint32_t ms);
 void s_delay_454(uint32_t seconds);
-int log_454(uint8_t *string);
 char *intToStr(int num);
 char *floatToStr(float num, int afterpoint);
-void send_register_value(uintptr_t reg_address, uint8_t reg_size);
 void mark________________(int LINE);
 void usart_echo(uint32_t usart_periph);
 
 // USART
-uint8_t usart0_send_454(uint8_t *string, uint16_t count_size);
-uint8_t usart0_receive_454(uint8_t *buffer, uint16_t buffer_size);
-uint8_t usart1_send_454(uint8_t *string, uint16_t count_size);
-uint8_t usart1_receive_454(void);
-uint8_t usart2_send_454(uint8_t *string, uint16_t count_size);
-uint8_t usart2_receive_454(void);
-
 // I2C
 uint8_t ZXP_Initial(uint32_t i2c_periph);
 void ZXP_StartP(uint32_t i2c_periph);
