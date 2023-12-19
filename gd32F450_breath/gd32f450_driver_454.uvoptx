@@ -205,6 +205,11 @@
           <WinNumber>1</WinNumber>
           <ItemText>flow_P15</ItemText>
         </Ww>
+        <Ww>
+          <count>11</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>sensor_data</ItemText>
+        </Ww>
       </WatchWindow1>
       <Tracepoint>
         <THDelay>0</THDelay>

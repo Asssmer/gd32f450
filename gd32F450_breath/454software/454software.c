@@ -2,11 +2,14 @@
 
 char strOutput_454[MAX_STR_SIZE]; // 存储转换后的字符串
 volatile uint8_t MOTOR_received_frame[MOTOR_FRAME_SIZE];
+volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
 //-----------------------------------------------------------------------
 //                       全局数据
 //-----------------------------------------------------------------------
 volatile uint16_t adc_values_454[ADC_CHANNEL_COUNT];
+
 volatile MotorStatus motor_status;
+volatile SensorData sensor_data;
 volatile pwm_capture_data_t pwm_values = {0};
 //-----------------------------------------------------------------------
 //                       初始化
@@ -74,8 +77,9 @@ void NVIC_init_454(void)
 {
     nvic_priority_group_set(NVIC_PRIGROUP_PRE1_SUB3);
     // 数字越小，优先级越高
-    nvic_irq_enable(TIMER4_IRQn, 0, 4);         // PWM_IN
+    // nvic_irq_enable(TIMER4_IRQn, 0, 4);         // PWM_IN
     nvic_irq_enable(DMA0_Channel1_IRQn, 0, 10); // USART2_RX
+    nvic_irq_enable(DMA1_Channel0_IRQn, 0, 9);  // ADC2
     // nvic_irq_enable(I2C0_EV_IRQn, 0, 3);
     // nvic_irq_enable(I2C1_EV_IRQn, 0, 4);
     // nvic_irq_enable(I2C0_ER_IRQn, 0, 2);
@@ -425,7 +429,7 @@ void ADC2_DMA_init_454(void)
 
     dma_single_data_mode_init(DMA1, DMA_CH0, &dma_init_struct);
     dma_channel_subperipheral_select(DMA1, DMA_CH0, DMA_SUBPERI2);
-
+    dma_interrupt_enable(DMA1, DMA_CH0, DMA_CHXCTL_FTFIE);
     // 使能DMA通道
     dma_channel_enable(DMA1, DMA_CH0);
 }
@@ -442,18 +446,13 @@ void ADC2_init_454(void)
 
     adc_special_function_config(ADC2, ADC_SCAN_MODE, ENABLE);
     adc_special_function_config(ADC2, ADC_CONTINUOUS_MODE, ENABLE);
-
     adc_data_alignment_config(ADC2, ADC_DATAALIGN_RIGHT);
-
     /* ADC DMA function enable */
     adc_dma_request_after_last_enable(ADC2);
     adc_dma_mode_enable(ADC2);
-
     adc_enable(ADC2);
     adc_calibration_enable(ADC2); // 校准ADC
-
     adc_external_trigger_config(ADC2, ADC_REGULAR_CHANNEL, EXTERNAL_TRIGGER_DISABLE);
-
     adc_channel_length_config(ADC2, ADC_REGULAR_CHANNEL, 6);
     adc_regular_channel_config(ADC2, 0, ADC_CHANNEL_4, ADC_SAMPLETIME_15); // p4比例阀
     adc_regular_channel_config(ADC2, 1, ADC_CHANNEL_5, ADC_SAMPLETIME_15); // P5电磁阀
@@ -461,7 +460,6 @@ void ADC2_init_454(void)
     adc_regular_channel_config(ADC2, 3, ADC_CHANNEL_7, ADC_SAMPLETIME_15); // PSE540
     adc_regular_channel_config(ADC2, 4, ADC_CHANNEL_8, ADC_SAMPLETIME_15); // 温度(备用)
     adc_regular_channel_config(ADC2, 5, ADC_CHANNEL_9, ADC_SAMPLETIME_15); // P16辅助氧浓度传感器
-
     adc_software_trigger_enable(ADC2, ADC_REGULAR_CHANNEL);
 }
 
@@ -1438,11 +1436,51 @@ void I2C1_EV_IRQHandler(void)
     //     // i2c_interrupt_flag_clear(I2C1, I2C_INT_FLAG_ADDSEND);
     // }
 }
+// ADC数据处理
+void DMA1_Channel0_IRQHandler(void)
+{
+    if (dma_interrupt_flag_get(DMA1, DMA_CH0, DMA_INT_FLAG_FTF) != RESET)
+    {
+        // 使用adc_to_voltage函数转换ADC值到电压
+        float voltage_p4 = adc_to_voltage(adc_values_454[0]);
+        float voltage_p5 = adc_to_voltage(adc_values_454[1]);
+        float voltage_p6 = adc_to_voltage(adc_values_454[2]);
+        float voltage_pse = adc_to_voltage(adc_values_454[3]);
+        float oxygen_voltage = adc_to_voltage(adc_values_454[5]);
 
-// USART2_RX 电机接收数据帧处理
+        // sensor_data.p4_valve = voltage_p4;
+        // sensor_data.p5_valve = voltage_p5;
+        // sensor_data.p6_valve = voltage_p6;
+        // sensor_data.pse540=voltage_pse;
+        // sensor_data.oxygen=oxygen_voltage;
+
+
+
+        // 根据传感器比例关系转换电压到物理量
+        sensor_data.p4_valve = voltage_p4 / 5.0f - 0.25f;
+        sensor_data.p5_valve = voltage_p5 / 10.0f;
+        sensor_data.p6_valve = voltage_p6 / 10.0f;
+        // 根据PSE540传感器的比例关系转换电压到物理量
+        if (voltage_pse < 0.25)
+        { // 对应 p < 62.5 kPa
+            sensor_data.pse540 = 0.0f;
+        }
+        else if (voltage_pse > 3.05)
+        { // 对应 p > 887.5 kPa
+            sensor_data.pse540 = 887.5f;
+        }
+        else
+        { // 对应 62.5 kPa <= p <= 887.5 kPa
+            sensor_data.pse540 = (voltage_pse + 0.25f) / 0.004f;
+        }
+        // !根据氧气传感器的比例关系转换电压到氧气浓度 需要修正!
+        sensor_data.oxygen = ((oxygen_voltage - 0) / (oxygen_voltage - 0)) * 20.9f * 100.0f;
+    }
+    dma_interrupt_flag_clear(DMA1, DMA_CH0, DMA_INT_FLAG_FTF);
+}
+//  USART2_RX 电机接收数据帧处理
 void DMA0_Channel1_IRQHandler(void)
 {
-    // dma_interrupt_disable(DMA0, DMA_CH1, DMA_CHXCTL_FTFIE);
     if (dma_interrupt_flag_get(DMA0, DMA_CH1, DMA_INT_FLAG_FTF) != RESET)
     {
         // 验证帧头
@@ -1477,6 +1515,5 @@ void DMA0_Channel1_IRQHandler(void)
         // printf("\n SPEED: %f\n",motor_status.current_speed);
         // printf("\n TEMP_: %f\n",motor_status.motor_temperature);
     }
-    // dma_interrupt_enable(DMA0, DMA_CH1, DMA_CHXCTL_FTFIE);
     dma_interrupt_flag_clear(DMA0, DMA_CH1, DMA_INT_FLAG_FTF);
 }

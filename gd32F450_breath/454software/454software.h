@@ -34,7 +34,7 @@
 #define FS4301_Address 0xa0
 #define FS4301_CMD 0xa1
 
-#define ADC_CHANNEL_COUNT 4
+#define ADC_CHANNEL_COUNT 6
 #define MOTOR_FRAME_SIZE 6 // 根据数据帧大小调整
 
 // 全局数据
@@ -51,6 +51,14 @@ typedef struct
     uint8_t checksum;           // 校验和
     uint8_t checksum_valid;      // 校验和是否有效
 } MotorStatus;
+typedef struct {
+    float p4_valve;    // P4比例阀
+    float p5_valve;    // P5电磁阀
+    float p6_valve;    // P6电磁阀
+    float pse540;      // PSE540
+    float temperature; // 温度(备用)
+    float oxygen; // P16辅助氧浓度传感器
+} SensorData;
 typedef struct {
     uint32_t rising_edge_value0;  // 上升沿时的计数器值
     uint32_t falling_edge_value0; // 下降沿时的计数器值
